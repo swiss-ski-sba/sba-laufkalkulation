@@ -129,8 +129,14 @@ select.event-select{
 .runrow .spacer{flex:1}
 .mode-toggle{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);font-weight:600}
 .mode-toggle .pill{padding:4px 12px;font-size:12px}
-.evpick{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
-.evpick .pill{padding:6px 13px;font-size:12px}
+.evpick{position:relative;margin-bottom:12px}
+.evpick > svg{position:absolute;right:13px;top:50%;transform:translateY(-50%);width:15px;height:15px;stroke:var(--muted);pointer-events:none}
+select.evpick-select{
+  width:100%;appearance:none;-webkit-appearance:none;background:var(--card);color:var(--ink);
+  border:1.4px solid var(--line);border-radius:12px;padding:12px 42px 12px 14px;
+  font-size:16px;font-weight:700;box-shadow:var(--shadow);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+select.evpick-select:focus{outline:none;border-color:var(--red)}
 .offbanner{
   display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--bord);font-weight:600;
   background:var(--red-soft);border:1.4px solid rgba(124,31,45,.3);border-radius:var(--radius-sm);
@@ -911,13 +917,13 @@ function renderCoachPicker() {
   const p = $("#evpick");
   p.hidden = false;
   p.innerHTML = "";
+  const sel = el("select", { class: "evpick-select", "aria-label": "Event wählen" });
   const sorted = state.events.slice().sort((a, b) => (a.datum || "").localeCompare(b.datum || ""));
-  for (const ev of sorted) {
-    p.appendChild(el("button", {
-      class: "pill" + (ev.id === ui.currentEventId ? " on" : ""),
-      onclick: () => { ui.currentEventId = ev.id; render(); },
-    }, ev.ort + " · " + fmtDatum(ev.datum)));
-  }
+  for (const ev of sorted) sel.appendChild(el("option", { value: ev.id }, eventTitle(ev)));
+  if (currentEvent()) sel.value = ui.currentEventId;
+  sel.addEventListener("change", () => { ui.currentEventId = sel.value; ui.runId = "q1"; render(); });
+  p.appendChild(sel);
+  p.appendChild(el("span", { html: '<svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" style="position:absolute;right:13px;top:50%;transform:translateY(-50%);width:15px;height:15px;stroke:var(--muted);pointer-events:none"><path d="M6 9l6 6 6-6"/></svg>' }));
 }
 function renderCoach(c, ev) {
   if (!ev) { c.appendChild(el("div", { class: "ccard" }, el("div", { class: "empty-hint" }, "Noch keine Events veröffentlicht."))); return; }
