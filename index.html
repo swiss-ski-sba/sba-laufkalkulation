@@ -1,0 +1,1128 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SBA Laufkalkulation">
+<meta name="theme-color" content="#7C1F2D">
+<title>SBA Laufkalkulation</title>
+<style>
+:root{
+  --red:#DA291C; --red-d:#B11E14; --bord:#7C1F2D; --bord-d:#5E1420;
+  --ink:#14181f; --ink2:#3a4350; --muted:#6b7785; --faint:#9aa3af;
+  --line:#e6e9ee; --bg:#f4f6f9; --card:#ffffff; --field:#fbfcfe;
+  --red-soft:rgba(218,41,28,.08);
+  --blau:#2E5FD0; --blau-soft:rgba(46,95,208,.09);
+  --rot:#DA291C; --rot-soft:rgba(218,41,28,.08);
+  --good:#1f9d6b;
+  --shadow:0 1px 3px rgba(20,24,31,.06),0 6px 22px rgba(20,24,31,.06);
+  --radius:16px; --radius-sm:9px;
+  --sat:env(safe-area-inset-top,0px); --sab:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
+  min-height:100vh; -webkit-tap-highlight-color:transparent;
+}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+input,select{font:inherit;color:inherit}
+svg{display:block}
+[hidden]{display:none!important}
+
+/* ================= LOGIN ================= */
+#login{
+  position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,#7C1F2D 0%,#5E1420 55%,#3f0d16 100%);
+  padding:24px 18px calc(24px + var(--sab));overflow:hidden;
+}
+.gates{position:absolute;inset:0;pointer-events:none;opacity:.5}
+.gates svg{width:100%;height:100%}
+.login-card{
+  position:relative;width:100%;max-width:380px;background:#fff;border-radius:22px;
+  box-shadow:0 24px 70px rgba(0,0,0,.45);padding:30px 26px calc(26px);
+  animation:rise .5s cubic-bezier(.2,.9,.3,1.2) both;
+}
+@keyframes rise{from{transform:translateY(26px);opacity:0}to{transform:none;opacity:1}}
+.login-card .stripe{display:flex;gap:0;height:5px;border-radius:99px;overflow:hidden;margin-bottom:22px}
+.login-card .stripe i{flex:1}
+.login-card .stripe i:first-child{background:var(--blau)}
+.login-card .stripe i:last-child{background:var(--rot)}
+.login-logo{height:26px;width:auto;margin-bottom:16px}
+.login-card h1{font-size:21px;font-weight:800;letter-spacing:-.01em;margin-bottom:4px;text-wrap:balance}
+.login-card .lsub{font-size:12px;color:var(--muted);font-weight:600;letter-spacing:.05em;text-transform:uppercase;margin-bottom:22px}
+.login-field{position:relative;margin-bottom:12px}
+.login-field input{
+  width:100%;background:var(--field);border:1.6px solid var(--line);border-radius:12px;
+  padding:14px 46px 14px 14px;font-size:16px;transition:border-color .15s;
+}
+.login-field input:focus{outline:none;border-color:var(--red)}
+.login-field .peek{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:9px}
+.login-field .peek svg{width:17px;height:17px;stroke:var(--faint)}
+.login-btn{
+  width:100%;background:var(--red);color:#fff;font-size:15px;font-weight:700;
+  padding:14px;border-radius:12px;box-shadow:0 4px 16px rgba(218,41,28,.4);transition:.15s;
+}
+.login-btn:active{background:var(--red-d)}
+.lhint{font-size:11.5px;color:var(--faint);text-align:center;margin-top:16px;line-height:1.5}
+.lerr{
+  font-size:12.5px;color:var(--red);font-weight:600;text-align:center;margin-top:10px;min-height:16px;
+}
+.login-card.shake{animation:shake .4s}
+@keyframes shake{0%,100%{transform:none}20%,60%{transform:translateX(-9px)}40%,80%{transform:translateX(9px)}}
+@media(prefers-reduced-motion:reduce){.login-card,.login-card.shake{animation:none}.livechip i{animation:none}}
+
+/* ================= TOPBAR ================= */
+.topbar{
+  position:sticky;top:0;z-index:40;
+  background:linear-gradient(120deg,#7C1F2D 0%,#5E1420 100%);color:#fff;
+  padding:calc(10px + var(--sat)) 16px 10px;
+  box-shadow:0 2px 14px rgba(94,20,32,.25);
+}
+.topbar-row{display:flex;align-items:center;gap:10px;max-width:1100px;margin:0 auto}
+.logo-svg{height:22px;width:auto;flex:none;display:block;filter:drop-shadow(0 2px 8px rgba(0,0,0,.35))}
+.brand{border-left:1px solid rgba(255,255,255,.28);padding-left:11px;min-width:0}
+.brand h1{font-size:14px;font-weight:700;line-height:1.15;white-space:nowrap}
+.brand .sub{font-size:10px;color:rgba(255,255,255,.66);font-weight:600;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+.livechip{
+  margin-left:auto;flex-shrink:0;display:inline-flex;align-items:center;gap:6px;
+  font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+  background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:4px 10px;color:#fff;
+  white-space:nowrap;
+}
+.livechip i{width:7px;height:7px;border-radius:50%;background:#9aa3af;flex:none}
+.livechip.live i{background:#4ade80;animation:pulse 1.6s infinite}
+.livechip.saving i{background:#fbbf24}
+.livechip.off i{background:#9aa3af}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.iconbtn{
+  width:38px;height:38px;border-radius:var(--radius-sm);flex-shrink:0;
+  background:rgba(255,255,255,.12);border:1.4px solid rgba(255,255,255,.28);
+  display:flex;align-items:center;justify-content:center;transition:.15s;
+}
+.iconbtn svg{width:17px;height:17px;stroke:#fff}
+.iconbtn:active{background:rgba(255,255,255,.22)}
+.event-select-wrap{position:relative;flex:1;min-width:0;max-width:320px;margin-left:auto}
+.event-select-wrap svg{position:absolute;right:10px;top:50%;transform:translateY(-50%);width:14px;height:14px;stroke:var(--muted);pointer-events:none}
+select.event-select{
+  width:100%;appearance:none;-webkit-appearance:none;background:#fff;color:var(--ink);
+  border:none;border-radius:var(--radius-sm);padding:8px 30px 8px 12px;font-size:16px;font-weight:650;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 1px 4px rgba(0,0,0,.25);
+}
+
+/* ================= LAYOUT / TABS ================= */
+.main{max-width:1100px;margin:0 auto;padding:14px 14px calc(60px + var(--sab))}
+.seg{display:flex;background:#d5dce6;border:1.4px solid #c2cbd7;border-radius:10px;padding:3px;gap:2px;margin-bottom:12px}
+.seg button{flex:1;padding:9px 4px;border-radius:8px;font-size:14px;font-weight:650;color:var(--ink2);white-space:nowrap;transition:.15s}
+.seg button.on{background:#fff;color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,.22);font-weight:700}
+.runrow{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.pill{
+  display:inline-flex;align-items:center;padding:6px 15px;border-radius:20px;font-size:12.5px;font-weight:700;
+  background:#fbfcfe;border:1.4px solid var(--line);color:var(--ink2);transition:.12s;
+}
+.pill.on{background:var(--red-soft);border-color:var(--red);color:var(--red)}
+.pill.ghost{color:var(--faint);font-weight:650}
+.runrow .spacer{flex:1}
+.mode-toggle{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);font-weight:600}
+.mode-toggle .pill{padding:4px 12px;font-size:12px}
+.evpick{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.evpick .pill{padding:6px 13px;font-size:12px}
+.offbanner{
+  display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--bord);font-weight:600;
+  background:var(--red-soft);border:1.4px solid rgba(124,31,45,.3);border-radius:var(--radius-sm);
+  padding:8px 12px;margin-bottom:12px;
+}
+
+/* ================= EDITOR (Command Center) ================= */
+.courses{display:grid;grid-template-columns:1fr;gap:14px}
+@media(min-width:860px){.courses{grid-template-columns:1fr 1fr}}
+.card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;margin-bottom:0}
+.course-head{display:flex;align-items:center;gap:10px;padding:13px 16px;border-bottom:1px solid var(--line)}
+.course-dot{width:12px;height:12px;border-radius:4px;flex-shrink:0}
+.course-head h3{font-size:14.5px;font-weight:700;flex:1}
+.course-best{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.course-best b{color:var(--ink);font-size:13px}
+.card.blau .course-head{background:var(--blau-soft)} .card.blau .course-dot{background:var(--blau)} .card.blau .course-head h3{color:var(--blau)}
+.card.rot .course-head{background:var(--rot-soft)} .card.rot .course-dot{background:var(--rot)} .card.rot .course-head h3{color:var(--rot)}
+table.ath{width:100%;border-collapse:collapse}
+table.ath th{font-size:10.5px;text-transform:uppercase;letter-spacing:.7px;color:var(--faint);text-align:left;padding:9px 8px 7px;border-bottom:2px solid var(--line);font-weight:700}
+table.ath td{padding:4px 6px;border-bottom:1px solid var(--line);vertical-align:middle}
+table.ath tr:last-child td{border-bottom:none}
+td.rank{width:30px;text-align:center;font-size:13px;font-weight:700;color:var(--faint);font-variant-numeric:tabular-nums}
+tr.is-best td.rank{color:var(--red)}
+.ath input{width:100%;background:transparent;border:1.4px solid transparent;border-radius:7px;padding:8px;font-size:16px;min-height:38px;color:var(--ink)}
+.ath input::placeholder{color:var(--faint)}
+.ath input:focus{outline:none;background:var(--field);border-color:#c2cbd7}
+.ath input.num{font-variant-numeric:tabular-nums;text-align:right;width:86px}
+.ath input.name{font-weight:650;text-transform:uppercase}
+td.diffcell{width:64px;text-align:right;font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap;padding-right:10px}
+td.meancell{width:70px;text-align:right;font-size:12.5px;color:var(--faint);font-variant-numeric:tabular-nums;padding-right:10px}
+td.delcell{width:34px;text-align:center}
+.delbtn{width:28px;height:28px;border-radius:7px;display:inline-flex;align-items:center;justify-content:center;opacity:.6}
+.delbtn svg{width:13px;height:13px;stroke:var(--muted)}
+.delbtn:active{background:var(--bg);opacity:1}
+.addrow{padding:10px 12px}
+.addbtn{width:100%;display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border:1.4px dashed #c2cbd7;border-radius:var(--radius-sm);color:var(--muted);font-size:13px;font-weight:650}
+.addbtn svg{width:14px;height:14px;stroke:var(--muted)}
+.addbtn:active{background:var(--bg)}
+.empty-hint{padding:18px 14px;text-align:center;color:var(--faint);font-size:13px}
+.analyse{margin-top:16px}
+.verdict{display:flex;align-items:center;gap:12px;padding:15px 18px;border-radius:var(--radius);background:var(--card);box-shadow:var(--shadow);margin-bottom:12px}
+.verdict .vdot{width:14px;height:14px;border-radius:5px;flex-shrink:0}
+.verdict .vtext{flex:1;font-size:14px;line-height:1.45;color:var(--ink2)}
+.verdict .vtext b{font-size:15px;color:var(--ink)}
+.verdict .vdelta{font-size:21px;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
+.verdict.neutral .vdot{background:var(--faint)}
+.chartcard{padding:16px 18px 14px}
+.chartcard h4{font-size:11.5px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin-bottom:4px;font-weight:700}
+.chartcard .sub{font-size:12px;color:var(--muted);margin-bottom:12px}
+.dchart{display:flex;flex-direction:column;gap:6px}
+.drow{display:flex;align-items:center;gap:8px}
+.drow .dl{width:52px;font-size:11.5px;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.dtrack{flex:1;position:relative;height:22px}
+.dmid{position:absolute;left:50%;top:-3px;bottom:-3px;width:1.4px;background:#c2cbd7}
+.dbar{position:absolute;top:3px;height:16px;border-radius:4px;min-width:2px}
+.dval{position:absolute;top:50%;transform:translateY(-50%);font-size:11px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.dlegend{display:flex;gap:16px;margin-top:12px;font-size:11.5px;color:var(--muted);flex-wrap:wrap}
+.dlegend span{display:inline-flex;align-items:center;gap:6px}
+.dlegend i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.sum-grid{display:grid;grid-template-columns:1fr;gap:12px}
+@media(min-width:860px){.sum-grid{grid-template-columns:1fr 1fr}}
+.sumcard{padding:15px 18px}
+.sumcard .sc-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.sumcard .sc-head h4{font-size:13.5px;font-weight:700}
+.chip{font-size:11px;font-weight:700;padding:4px 11px;border-radius:20px;letter-spacing:.3px;white-space:nowrap}
+.chip.blau{background:var(--blau-soft);color:var(--blau)}
+.chip.rot{background:var(--rot-soft);color:var(--rot)}
+.chip.neutral{background:var(--bg);color:var(--muted)}
+.sumline{display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:5px 0;color:var(--muted)}
+.sumline b{color:var(--ink);font-variant-numeric:tabular-nums;font-weight:650}
+.sumline .cb{color:var(--blau);font-weight:700} .sumline .cr{color:var(--rot);font-weight:700}
+table.sumtab{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+table.sumtab th{font-size:10.5px;text-transform:uppercase;letter-spacing:.7px;color:var(--faint);text-align:right;padding:8px;border-bottom:2px solid var(--line);font-weight:700}
+table.sumtab th:first-child{text-align:left}
+table.sumtab td{padding:8px;border-bottom:1px solid var(--line);text-align:right;color:var(--ink2)}
+table.sumtab td:first-child{text-align:left;color:var(--ink);font-weight:650}
+table.sumtab tr:last-child td{border-bottom:none}
+
+/* ================= COACH (kompakt) ================= */
+.ccard{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;margin-bottom:12px}
+.runhead{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line)}
+.runhead h3{font-size:14px;font-weight:700;flex:1}
+.duo{display:grid;grid-template-columns:1fr 1fr}
+.col{padding:8px 10px 10px;min-width:0}
+.col + .col{border-left:1px solid var(--line)}
+.colhead{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;margin:2px 2px 6px}
+.colhead i{width:9px;height:9px;border-radius:3px;display:inline-block;flex:none}
+.col.b .colhead{color:var(--blau)} .col.b .colhead i{background:var(--blau)}
+.col.r .colhead{color:var(--rot)} .col.r .colhead i{background:var(--rot)}
+table.t{width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums}
+table.t td{padding:4.5px 3px;border-bottom:1px solid var(--line);white-space:nowrap}
+table.t tr:last-child td{border-bottom:none}
+td.rk{width:20px;color:var(--faint);font-weight:700;font-size:11px}
+tr.best td.rk{color:var(--red)}
+td.nm{font-weight:650;overflow:hidden;text-overflow:ellipsis;max-width:0}
+td.zt{text-align:right;font-weight:600;width:52px}
+td.df{text-align:right;color:var(--muted);font-size:11px;width:42px}
+.emptycol{padding:14px 4px;text-align:center;color:var(--faint);font-size:12px}
+.deltarow{display:flex;align-items:center;gap:10px;padding:11px 14px;background:var(--field);border-top:1px solid var(--line)}
+.deltarow .txt{flex:1;font-size:12.5px;color:var(--ink2);line-height:1.4}
+.deltarow .txt b{color:var(--ink)}
+.deltarow .num{font-size:18px;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
+.ccard .sumhead{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700;margin-bottom:8px}
+.ccard.sumwrap{padding:13px 14px}
+table.s{width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums}
+table.s th{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--faint);text-align:right;padding:5px 4px;border-bottom:2px solid var(--line);font-weight:700}
+table.s th:first-child{text-align:left}
+table.s td{padding:6px 4px;border-bottom:1px solid var(--line);text-align:right;color:var(--ink2)}
+table.s td:first-child{text-align:left;color:var(--ink);font-weight:650}
+table.s tr:last-child td{border-bottom:none}
+@media(max-width:480px){ td.df{display:none} td.zt{width:48px} }
+
+/* ================= SHEETS / TOAST ================= */
+.overlay{position:fixed;inset:0;background:rgba(20,24,31,.45);z-index:90;display:none;align-items:flex-end;justify-content:center;-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+@media(min-width:640px){.overlay{align-items:center}}
+.overlay.show{display:flex}
+.sheet{background:var(--card);width:100%;max-width:480px;border-radius:18px 18px 0 0;max-height:88vh;overflow-y:auto;padding:18px 18px calc(18px + var(--sab));box-shadow:0 -8px 40px rgba(20,24,31,.25)}
+@media(min-width:640px){.sheet{border-radius:18px;padding-bottom:18px;box-shadow:0 20px 60px rgba(20,24,31,.3)}}
+.sheet h3{font-size:16px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:9px}
+.sheet h3 svg{width:17px;height:17px;stroke:var(--red)}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:11.5px;color:var(--muted);margin-bottom:5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.field input,.field select{width:100%;background:var(--field);border:1.4px solid var(--line);border-radius:var(--radius-sm);padding:10px 12px;font-size:16px;appearance:none;-webkit-appearance:none;color:var(--ink)}
+.field input:focus,.field select:focus{outline:none;border-color:var(--red)}
+.btnrow{display:flex;gap:10px;margin-top:16px}
+.btn{flex:1;padding:12px;border-radius:var(--radius-sm);font-size:14px;font-weight:700;text-align:center;background:#fff;border:1.4px solid var(--line);color:var(--ink2);transition:.15s}
+.btn.primary{background:var(--red);border-color:var(--red);color:#fff;box-shadow:0 2px 10px rgba(218,41,28,.35)}
+.btn.primary:active{background:var(--red-d)}
+.btn.danger{color:var(--red);border-color:var(--red)}
+.btn:active{filter:brightness(.96)}
+.menu-list{display:flex;flex-direction:column;gap:2px}
+.menu-item{display:flex;align-items:center;gap:12px;padding:12px 10px;border-radius:var(--radius-sm);font-size:14.5px;font-weight:600;text-align:left;width:100%;color:var(--ink2)}
+.menu-item svg{width:17px;height:17px;stroke:var(--muted);flex-shrink:0}
+.menu-item:active{background:var(--bg)}
+.menu-item.danger{color:var(--red)}
+.menu-item.danger svg{stroke:var(--red)}
+.menu-sep{height:1px;background:var(--line);margin:6px 0}
+.note{font-size:12.5px;color:var(--ink2);line-height:1.55;background:var(--field);border:1.4px solid var(--line);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:12px}
+.note.warn{border-color:rgba(218,41,28,.45);background:var(--red-soft)}
+.toast{
+  visibility:hidden;opacity:0;position:fixed;bottom:calc(20px + var(--sab));left:50%;
+  transform:translateX(-50%) translateY(80px);background:var(--ink);color:#fff;
+  padding:11px 18px;border-radius:99px;font-size:13.5px;font-weight:600;z-index:220;
+  transition:transform .25s ease,opacity .2s;box-shadow:0 6px 24px rgba(20,24,31,.35);max-width:90vw;text-align:center;
+}
+.toast.show{visibility:visible;opacity:1;transform:translateX(-50%) translateY(0)}
+.updated{text-align:center;color:var(--faint);font-size:11px;padding:10px 0 4px}
+@media(max-width:700px){
+  .brand{display:none}
+  th.mean-h,td.meancell{display:none}
+  .ath input.num{width:76px}
+  td.diffcell{width:54px;padding-right:6px}
+  .event-select-wrap{max-width:none}
+  .logo-svg{height:19px}
+}
+</style>
+</head>
+<body>
+
+
+<!-- ================= LOGIN ================= -->
+<div id="login">
+  <div class="gates" aria-hidden="true">
+    <svg viewBox="0 0 400 800" preserveAspectRatio="xMidYMid slice">
+      <path d="M80 -20 C 160 140, 20 300, 120 460 S 60 720, 150 840" fill="none" stroke="rgba(255,255,255,.10)" stroke-width="46" stroke-linecap="round"/>
+      <path d="M300 -40 C 380 160, 240 320, 330 480 S 260 740, 350 860" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="46" stroke-linecap="round"/>
+      <g stroke-width="0" fill="rgba(120,160,255,.5)">
+        <circle cx="96" cy="120" r="5"/><circle cx="70" cy="330" r="5"/><circle cx="128" cy="540" r="5"/>
+      </g>
+      <g stroke-width="0" fill="rgba(255,120,110,.5)">
+        <circle cx="318" cy="150" r="5"/><circle cx="290" cy="360" r="5"/><circle cx="346" cy="570" r="5"/>
+      </g>
+    </svg>
+  </div>
+  <div class="login-card" id="loginCard">
+    <div class="stripe"><i></i><i></i></div>
+    <svg class="login-logo" xmlns:svg="http://www.w3.org/2000/svg" xmlns="http://www.w3.org/2000/svg" version="1.1"   viewBox="-0.89671641 -0.89671641 136.68413282 31.68397982" id="svg11987"> <defs id="defs11989" /> <path d="M 45.167373,4.5035962 44.854261,4.3440205 44.541148,4.2644718 44.306373,4.0253475 44.071676,3.7863028 43.915237,3.4673906 43.758563,3.1484785 l 0,-0.3984609 0.07834,-0.4782488 0.07834,-0.5579568 0.234775,-0.4782487 0.313034,-0.39870004 0.391215,-0.31867306 0.469551,-0.23912436 0.469551,-0.15957566 0.547809,-0.0795487 0.313112,0 0.391215,0.0795487 0.313112,0.15957566 0.234775,0.23912436 0.234776,0.23912436 0.15636,0.31891214 0.07841,0.3186731 0,0.3189122 0,0.5579568 -0.156751,0.5580366 -0.234698,0.4782487 -0.312877,0.3984609 -0.391449,0.3188325 -0.391214,0.2391243 -0.54781,0.1593366 -0.469551,0.079788 -0.391214,0 z" id="path9406" style="fill:#e3001b;fill-opacity:1;fill-rule:nonzero;stroke:none" /> <path d="m 38.515322,29.531786 4.304139,-20.5645355 3.443374,0 -4.304139,20.5645355 -3.443374,0 z" id="path9426" style="fill:#e3001b;fill-opacity:1;fill-rule:nonzero;stroke:none" /> <path d="m 28.106824,29.531786 -0.782428,-13.390884 -0.156674,-2.311616 0,-1.753578 -0.782585,1.833366 -1.095541,2.311615 -6.495534,13.311097 -2.347676,0 -0.313112,-20.5645355 2.347911,0 -0.07834,12.8328475 -0.07834,4.463655 0.860922,-1.992703 1.173878,-2.391164 6.260601,-12.9126355 2.504272,0 0.704327,12.9126355 0.07834,2.470952 0.07834,1.833366 0.704326,-1.833366 1.017361,-2.55074 5.477938,-12.8328475 2.347912,0 -8.999885,20.5645355 -2.426013,0 z" id="path9438" style="fill:#e3001b;fill-opacity:1;fill-rule:nonzero;stroke:none" /> <path d="m 5.4119377,29.850699 -0.7826633,0 L 3.8469242,29.770911 3.1423629,29.611575 2.4381147,29.37245 1.7337882,28.974069 1.1077985,28.575369 0.5599107,28.017333 0.0903597,27.379747 0.0121012,27.22049 l 1.0956973,-1.036285 0.1564387,0.239125 0.3131123,0.558036 0.3912142,0.478169 0.469551,0.318673 0.5478095,0.318912 0.5478878,0.239125 0.6259897,0.07979 0.5478095,0.07979 0.7043265,0.07955 0.8609218,-0.07955 0.8607652,-0.239363 0.8609218,-0.318673 0.7043265,-0.558037 0.5476529,-0.557957 0.3131123,-0.39846 0.1565953,-0.3987 0.1564387,-0.398461 0.1565168,-0.398382 0.07826,-0.478248 0,-0.558037 -0.07826,-0.797081 L 9.8726722,22.677048 9.5596382,22.039224 9.168424,21.481506 8.6205362,20.923469 7.9945465,20.365433 6.6640737,19.329227 5.3336009,18.292942 4.785948,17.655357 4.2380602,17.0974 3.7685875,16.380027 3.3771384,15.662654 3.2206997,14.865572 3.064261,13.909075 3.142363,13.351118 3.2207,12.793321 3.3771387,12.235284 3.6119142,11.677248 3.8469245,11.199079 4.159802,10.800618 4.5511728,10.401918 4.942387,10.003457 5.3336012,9.6845446 5.803387,9.3657122 6.2728598,9.1265878 6.7424108,8.9672513 7.8379515,8.6483391 l 1.0956973,-0.079788 0.7042482,0 0.704326,0.079788 0.62599,0.1595756 0.704483,0.2391244 0.62599,0.3186731 0.547887,0.3987 0.469551,0.5577178 0.469473,0.558036 0.07834,0.159576 -1.095697,0.956418 -0.07834,-0.239045 -0.312878,-0.478249 -0.39137,-0.3987 -0.469551,-0.318912 -0.469551,-0.318673 -0.469551,-0.159575 -0.54781,-0.159337 -0.5478873,-0.079788 -0.5476529,0 -0.8609218,0.079788 -0.7826633,0.159337 -0.7824284,0.318912 -0.6261463,0.478248 -0.5478878,0.558037 -0.3912142,0.717293 -0.2347755,0.717373 -0.078337,0.478249 0,0.478169 0,0.637825 0.1566736,0.637585 0.2347755,0.557957 0.3912142,0.478248 0.391449,0.478249 0.547653,0.478249 1.1737992,1.036205 1.4869115,1.116073 0.7044831,0.637506 0.6259894,0.717373 0.547888,0.717373 0.391214,0.797081 0.156674,0.478249 0.15636,0.478249 0.07834,0.478169 0,0.558036 -0.07834,0.637825 -0.07826,0.637505 -0.156439,0.558037 -0.234776,0.558036 -0.313112,0.557798 -0.313112,0.478169 -0.391214,0.3987 -0.3912144,0.398461 -0.4697076,0.318912 -0.469551,0.318912 -0.5476529,0.318593 -0.5478878,0.159576 -0.5478095,0.239124 -0.5478878,0.07955 -0.6259897,0.07979 -0.5478095,0 z" id="path9450" style="fill:#e3001b;fill-opacity:1;fill-rule:nonzero;stroke:none" /> <path d="m 52.366999,29.850699 -1.64335,0 -1.565249,-0.239124 -0.782428,-0.239125 -0.782663,-0.239044 -0.704248,-0.239125 -0.704327,-0.398461 1.799789,-3.905857 0.939102,0.558037 1.01736,0.398381 1.095698,0.318912 0.625989,0.07979 0.547888,0 0.547888,0 0.547653,-0.07979 0.469473,-0.159337 0.469786,-0.239044 0.391214,-0.239125 0.313034,-0.3987 0.156438,-0.478248 0.07834,-0.558037 0,-0.398381 -0.156595,-0.318912 -0.156517,-0.398461 -0.313034,-0.318912 -0.312877,-0.398461 -0.469786,-0.3987 -1.251901,-0.796842 -1.252215,-0.956737 -0.626146,-0.557718 -0.547653,-0.558036 -0.469707,-0.637824 -0.391293,-0.796843 -0.234776,-0.876948 -0.07826,-0.956418 0,-0.717373 0.156674,-0.717373 0.15636,-0.717294 0.234775,-0.637824 0.234776,-0.558036 0.391449,-0.637506 0.391214,-0.478249 0.469473,-0.478248 0.469551,-0.3987 0.626225,-0.3984614 0.625989,-0.3188324 0.704249,-0.3186731 0.704326,-0.2391244 0.782585,-0.1595756 0.861,-0.079788 0.860765,0 1.565249,0.079788 1.408574,0.2391243 0.704327,0.1595757 0.625989,0.2391244 0.704484,0.2391243 0.625989,0.3185934 -1.721687,3.7462818 -0.860765,-0.478169 -0.939259,-0.398461 -1.09554,-0.239124 -1.095698,-0.07979 -0.704326,0.07979 -0.62599,0.07955 -0.469472,0.239364 -0.39145,0.239124 -0.234775,0.318673 -0.234776,0.318833 -0.07834,0.318912 -0.0781,0.398461 0.0781,0.478248 0.23501,0.3987 0.234776,0.398382 0.312877,0.398461 0.860922,0.637824 0.782663,0.558036 1.408575,0.956418 0.704326,0.558037 0.54781,0.637585 0.547731,0.717293 0.391371,0.797161 0.156438,0.398461 0.156674,0.478169 0.0781,0.558037 0,0.558036 0,0.797081 -0.156439,0.797161 -0.234775,0.717373 -0.313112,0.637506 -0.313035,0.637824 -0.469551,0.557798 -0.46955,0.557957 -0.469552,0.478248 -0.625989,0.3987 -0.626147,0.398461 -0.625989,0.318912 -0.704327,0.239045 -0.626146,0.159337 -0.782663,0.159336 -0.704249,0.07979 -0.704326,0 z" id="path9470" style="fill:#e3001b;fill-opacity:1;fill-rule:nonzero;stroke:none" /> <path d="m 68.175372,29.850699 -1.643585,0 -1.64335,-0.239124 -0.860766,-0.159337 -0.782585,-0.159576 -0.782663,-0.239044 -0.704326,-0.318673 1.878125,-5.021692 0.861,0.478249 1.017361,0.398461 1.017204,0.318912 1.01736,0.07979 0.547888,-0.07979 0.469551,0 0.469551,-0.159336 0.313034,-0.159576 0.313112,-0.159336 0.234776,-0.318913 0.156439,-0.318912 0,-0.398381 0,-0.239124 -0.07834,-0.318913 -0.234776,-0.239124 -0.234775,-0.239124 -0.704248,-0.558037 -1.095541,-0.717293 -1.174034,-0.87671 -0.62599,-0.558036 -0.469551,-0.557957 -0.469472,-0.637585 -0.39145,-0.717374 -0.234775,-0.797081 -0.0781,-0.956497 0.0781,-0.876869 0.07834,-0.797161 0.234775,-0.796842 0.234776,-0.717373 0.391136,-0.637825 0.391449,-0.637505 0.469551,-0.558037 0.547887,-0.478248 0.547575,-0.478249 0.704561,-0.3987002 0.704327,-0.3185933 0.704248,-0.2391244 0.782663,-0.2391244 0.860766,-0.1595756 0.860921,-0.079788 0.860766,0 1.721687,0.079788 1.565248,0.1595756 1.565013,0.3984609 1.486912,0.478169 -1.878126,4.8621154 -0.860765,-0.478248 -0.939259,-0.398461 -1.095462,-0.318833 -1.095776,-0.07955 -0.547809,0.07955 -0.469551,0.07979 -0.391214,0.159257 -0.313113,0.159575 -0.156438,0.239125 -0.234697,0.239124 -0.07834,0.239125 0,0.239124 0.07834,0.398461 0.07826,0.318912 0.234775,0.239045 0.312878,0.318912 0.782663,0.557797 0.860922,0.558037 1.330316,0.876869 0.626146,0.558036 0.547653,0.637586 0.469708,0.637505 0.391292,0.797161 0.234776,0.876949 0.07826,0.478169 0.0781,0.478249 -0.0781,0.956497 -0.156595,0.87663 -0.234775,0.797161 -0.312956,0.797081 -0.391371,0.637824 -0.547888,0.637586 -0.469472,0.557956 -0.62599,0.478249 -0.626225,0.398461 -0.704248,0.3987 -0.782663,0.239124 -0.704327,0.239045 -0.782585,0.239124 -0.860765,0.07955 -0.782585,0.07979 -0.860765,0 z" id="path9490" style="fill:#e3001b;fill-opacity:1;fill-rule:nonzero;stroke:none" /> <path d="m 112.70442,29.531786 -2.66079,-7.332988 -1.1738,1.673791 0,5.659197 -8.37374,0 0,-28.6949232 8.37374,0 0,14.9055782 3.99103,-7.1738906 9.93898,0 -6.02606,8.5288486 6.1825,12.434387 -10.25186,0 z" id="path9510" style="fill:#e3001b;fill-opacity:1;fill-rule:nonzero;stroke:none" /> <path d="m 87.505182,29.850699 -1.721687,0 -1.721687,-0.159337 -1.721687,-0.239124 -1.64335,-0.39862 1.017125,-5.659197 1.017361,0.398381 1.174112,0.239125 1.095463,0.239124 1.173877,0.07979 0.469473,-0.07979 0.391449,0 0.312877,-0.159337 0.313113,-0.159336 0.234775,-0.159576 0.156674,-0.159336 0.0781,-0.239045 0.07834,-0.318912 -0.07834,-0.318673 -0.0781,-0.239125 -0.156674,-0.239363 -0.234775,-0.159337 -0.547888,-0.318912 -0.547575,-0.159336 -1.486989,-0.478169 -0.782585,-0.318913 -0.782664,-0.39846 -0.782663,-0.558037 -0.625912,-0.637506 -0.547887,-0.717373 -0.391214,-0.876948 -0.156674,-0.478169 -0.156439,-0.478249 -0.07834,-0.558037 0,-0.558036 0,-0.796842 0.156752,-0.717612 0.156361,-0.717294 0.313112,-0.717373 0.312877,-0.637585 0.469786,-0.637745 0.469551,-0.557797 0.547575,-0.558037 0.704561,-0.4781688 0.704327,-0.3987 0.78235,-0.3186731 0.861,-0.3189122 0.939024,-0.2391244 0.939102,-0.1595756 1.095697,-0.1593365 1.095541,0 1.565248,0.079788 1.64335,0.1593365 1.64335,0.2391244 1.721687,0.3189122 -0.939023,5.2607355 -1.095541,-0.318912 -1.173799,-0.239124 -1.095776,-0.159257 -1.252136,-0.07979 -0.704326,0.07979 -0.313034,0.159257 -0.234776,0.07979 -0.156439,0.159337 -0.156438,0.239124 0,0.159337 -0.07834,0.239124 0.07834,0.239364 0.0781,0.239124 0.234775,0.318673 0.469473,0.239045 0.469551,0.239124 1.330551,0.3987 1.017361,0.398461 1.017438,0.3987 0.860687,0.557718 0.782663,0.558036 0.391136,0.3987 0.313113,0.318673 0.234775,0.478249 0.234776,0.39862 0.156673,0.478249 0.156439,0.558037 0.07834,0.557797 0,0.637745 0,0.956497 -0.156674,0.87663 -0.234775,0.876949 -0.313113,0.717293 -0.469551,0.717373 -0.469472,0.637825 -0.547653,0.637505 -0.626225,0.478249 -0.704248,0.478249 -0.782663,0.3987 -0.860687,0.398461 -0.861,0.239044 -0.939102,0.239125 -1.017361,0.159336 -1.017439,0.07979 -1.095462,0 z" id="path9522" style="fill:#e3001b;fill-opacity:1;fill-rule:nonzero;stroke:none" /> <path d="m 129.1387,7.2136723 -0.93902,-0.2391244 -0.78267,-0.2391243 -0.70425,-0.4782487 -0.54788,-0.4781691 -0.39145,-0.6378243 -0.23478,-0.7173731 -0.0781,-0.7172934 0,-0.7173731 0.23478,-0.6378243 0.39121,-0.6375056 0.46955,-0.5580365 0.70425,-0.47824875 0.78266,-0.31891219 1.01736,-0.23912436 1.09578,-0.0795487 1.09546,0.0795487 0.9391,0.15957566 0.78259,0.31867306 0.70432,0.47848788 0.46956,0.4782487 0.39144,0.6375055 0.23478,0.7173731 0.078,0.7971609 -0.078,0.7970812 -0.23478,0.7173731 -0.39144,0.5580365 -0.54789,0.5577178 -0.70433,0.3987 -0.78235,0.3189122 -0.93934,0.1593365 -1.01712,0.079788 -1.01744,-0.079788 z" id="path9542" style="fill:#e3001b;fill-opacity:1;fill-rule:nonzero;stroke:none" /> <path d="m 125.625,8.5625077 0,20.9687503 9.0625,0 0,-20.9687503 z" id="path12260" style="fill:#ffffff;fill-opacity:1;stroke:#ffffff;stroke-width:0.07897998;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-opacity:0;stroke-dasharray:none" /> <path d="m 125.625,8.5625077 0,20.9687503 9.0625,0 0,-7 -1.09375,0 0,2.6875 -2.34375,0 0,-2.6875 -2.65625,0 0,-2.3125 2.65625,0 0,-2.71875 2.34375,0 0,2.71875 1.09375,0 0,-11.6562503 -9.0625,0 z" id="path9564" style="fill:#e3001b;fill-opacity:1;stroke:#ffffff;stroke-width:0.07897998;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-opacity:0;stroke-dasharray:none" /> </svg>
+    <h1>SBA Laufkalkulation</h1>
+    <div class="lsub">Snowboard Alpin · Blau vs. Rot</div>
+    <form id="loginForm" autocomplete="off">
+      <div class="login-field">
+        <input type="password" id="pwInput" placeholder="Passwort" autocomplete="current-password" aria-label="Passwort">
+        <button type="button" class="peek" id="peekBtn" aria-label="Passwort anzeigen">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+      </div>
+      <button type="submit" class="login-btn">Anmelden</button>
+    </form>
+    <div class="lerr" id="loginErr"></div>
+    <div class="lhint">Command Center bearbeitet die Events.<br>Coaches sehen alle Resultate live.</div>
+  </div>
+</div>
+
+<!-- ================= APP ================= -->
+<div id="app" hidden>
+  <div class="topbar">
+    <div class="topbar-row">
+      <svg class="logo-svg" xmlns:svg="http://www.w3.org/2000/svg" xmlns="http://www.w3.org/2000/svg" version="1.1"   viewBox="-0.89671641 -0.89671641 136.68413282 31.68397982" id="svg11987"> <defs id="defs11989" /> <path d="M 45.167373,4.5035962 44.854261,4.3440205 44.541148,4.2644718 44.306373,4.0253475 44.071676,3.7863028 43.915237,3.4673906 43.758563,3.1484785 l 0,-0.3984609 0.07834,-0.4782488 0.07834,-0.5579568 0.234775,-0.4782487 0.313034,-0.39870004 0.391215,-0.31867306 0.469551,-0.23912436 0.469551,-0.15957566 0.547809,-0.0795487 0.313112,0 0.391215,0.0795487 0.313112,0.15957566 0.234775,0.23912436 0.234776,0.23912436 0.15636,0.31891214 0.07841,0.3186731 0,0.3189122 0,0.5579568 -0.156751,0.5580366 -0.234698,0.4782487 -0.312877,0.3984609 -0.391449,0.3188325 -0.391214,0.2391243 -0.54781,0.1593366 -0.469551,0.079788 -0.391214,0 z" id="path9406" style="fill:#e3001b;fill-opacity:1;fill-rule:nonzero;stroke:none" /> <path d="m 38.515322,29.531786 4.304139,-20.5645355 3.443374,0 -4.304139,20.5645355 -3.443374,0 z" id="path9426" style="fill:#e3001b;fill-opacity:1;fill-rule:nonzero;stroke:none" /> <path d="m 28.106824,29.531786 -0.782428,-13.390884 -0.156674,-2.311616 0,-1.753578 -0.782585,1.833366 -1.095541,2.311615 -6.495534,13.311097 -2.347676,0 -0.313112,-20.5645355 2.347911,0 -0.07834,12.8328475 -0.07834,4.463655 0.860922,-1.992703 1.173878,-2.391164 6.260601,-12.9126355 2.504272,0 0.704327,12.9126355 0.07834,2.470952 0.07834,1.833366 0.704326,-1.833366 1.017361,-2.55074 5.477938,-12.8328475 2.347912,0 -8.999885,20.5645355 -2.426013,0 z" id="path9438" style="fill:#e3001b;fill-opacity:1;fill-rule:nonzero;stroke:none" /> <path d="m 5.4119377,29.850699 -0.7826633,0 L 3.8469242,29.770911 3.1423629,29.611575 2.4381147,29.37245 1.7337882,28.974069 1.1077985,28.575369 0.5599107,28.017333 0.0903597,27.379747 0.0121012,27.22049 l 1.0956973,-1.036285 0.1564387,0.239125 0.3131123,0.558036 0.3912142,0.478169 0.469551,0.318673 0.5478095,0.318912 0.5478878,0.239125 0.6259897,0.07979 0.5478095,0.07979 0.7043265,0.07955 0.8609218,-0.07955 0.8607652,-0.239363 0.8609218,-0.318673 0.7043265,-0.558037 0.5476529,-0.557957 0.3131123,-0.39846 0.1565953,-0.3987 0.1564387,-0.398461 0.1565168,-0.398382 0.07826,-0.478248 0,-0.558037 -0.07826,-0.797081 L 9.8726722,22.677048 9.5596382,22.039224 9.168424,21.481506 8.6205362,20.923469 7.9945465,20.365433 6.6640737,19.329227 5.3336009,18.292942 4.785948,17.655357 4.2380602,17.0974 3.7685875,16.380027 3.3771384,15.662654 3.2206997,14.865572 3.064261,13.909075 3.142363,13.351118 3.2207,12.793321 3.3771387,12.235284 3.6119142,11.677248 3.8469245,11.199079 4.159802,10.800618 4.5511728,10.401918 4.942387,10.003457 5.3336012,9.6845446 5.803387,9.3657122 6.2728598,9.1265878 6.7424108,8.9672513 7.8379515,8.6483391 l 1.0956973,-0.079788 0.7042482,0 0.704326,0.079788 0.62599,0.1595756 0.704483,0.2391244 0.62599,0.3186731 0.547887,0.3987 0.469551,0.5577178 0.469473,0.558036 0.07834,0.159576 -1.095697,0.956418 -0.07834,-0.239045 -0.312878,-0.478249 -0.39137,-0.3987 -0.469551,-0.318912 -0.469551,-0.318673 -0.469551,-0.159575 -0.54781,-0.159337 -0.5478873,-0.079788 -0.5476529,0 -0.8609218,0.079788 -0.7826633,0.159337 -0.7824284,0.318912 -0.6261463,0.478248 -0.5478878,0.558037 -0.3912142,0.717293 -0.2347755,0.717373 -0.078337,0.478249 0,0.478169 0,0.637825 0.1566736,0.637585 0.2347755,0.557957 0.3912142,0.478248 0.391449,0.478249 0.547653,0.478249 1.1737992,1.036205 1.4869115,1.116073 0.7044831,0.637506 0.6259894,0.717373 0.547888,0.717373 0.391214,0.797081 0.156674,0.478249 0.15636,0.478249 0.07834,0.478169 0,0.558036 -0.07834,0.637825 -0.07826,0.637505 -0.156439,0.558037 -0.234776,0.558036 -0.313112,0.557798 -0.313112,0.478169 -0.391214,0.3987 -0.3912144,0.398461 -0.4697076,0.318912 -0.469551,0.318912 -0.5476529,0.318593 -0.5478878,0.159576 -0.5478095,0.239124 -0.5478878,0.07955 -0.6259897,0.07979 -0.5478095,0 z" id="path9450" style="fill:#e3001b;fill-opacity:1;fill-rule:nonzero;stroke:none" /> <path d="m 52.366999,29.850699 -1.64335,0 -1.565249,-0.239124 -0.782428,-0.239125 -0.782663,-0.239044 -0.704248,-0.239125 -0.704327,-0.398461 1.799789,-3.905857 0.939102,0.558037 1.01736,0.398381 1.095698,0.318912 0.625989,0.07979 0.547888,0 0.547888,0 0.547653,-0.07979 0.469473,-0.159337 0.469786,-0.239044 0.391214,-0.239125 0.313034,-0.3987 0.156438,-0.478248 0.07834,-0.558037 0,-0.398381 -0.156595,-0.318912 -0.156517,-0.398461 -0.313034,-0.318912 -0.312877,-0.398461 -0.469786,-0.3987 -1.251901,-0.796842 -1.252215,-0.956737 -0.626146,-0.557718 -0.547653,-0.558036 -0.469707,-0.637824 -0.391293,-0.796843 -0.234776,-0.876948 -0.07826,-0.956418 0,-0.717373 0.156674,-0.717373 0.15636,-0.717294 0.234775,-0.637824 0.234776,-0.558036 0.391449,-0.637506 0.391214,-0.478249 0.469473,-0.478248 0.469551,-0.3987 0.626225,-0.3984614 0.625989,-0.3188324 0.704249,-0.3186731 0.704326,-0.2391244 0.782585,-0.1595756 0.861,-0.079788 0.860765,0 1.565249,0.079788 1.408574,0.2391243 0.704327,0.1595757 0.625989,0.2391244 0.704484,0.2391243 0.625989,0.3185934 -1.721687,3.7462818 -0.860765,-0.478169 -0.939259,-0.398461 -1.09554,-0.239124 -1.095698,-0.07979 -0.704326,0.07979 -0.62599,0.07955 -0.469472,0.239364 -0.39145,0.239124 -0.234775,0.318673 -0.234776,0.318833 -0.07834,0.318912 -0.0781,0.398461 0.0781,0.478248 0.23501,0.3987 0.234776,0.398382 0.312877,0.398461 0.860922,0.637824 0.782663,0.558036 1.408575,0.956418 0.704326,0.558037 0.54781,0.637585 0.547731,0.717293 0.391371,0.797161 0.156438,0.398461 0.156674,0.478169 0.0781,0.558037 0,0.558036 0,0.797081 -0.156439,0.797161 -0.234775,0.717373 -0.313112,0.637506 -0.313035,0.637824 -0.469551,0.557798 -0.46955,0.557957 -0.469552,0.478248 -0.625989,0.3987 -0.626147,0.398461 -0.625989,0.318912 -0.704327,0.239045 -0.626146,0.159337 -0.782663,0.159336 -0.704249,0.07979 -0.704326,0 z" id="path9470" style="fill:#e3001b;fill-opacity:1;fill-rule:nonzero;stroke:none" /> <path d="m 68.175372,29.850699 -1.643585,0 -1.64335,-0.239124 -0.860766,-0.159337 -0.782585,-0.159576 -0.782663,-0.239044 -0.704326,-0.318673 1.878125,-5.021692 0.861,0.478249 1.017361,0.398461 1.017204,0.318912 1.01736,0.07979 0.547888,-0.07979 0.469551,0 0.469551,-0.159336 0.313034,-0.159576 0.313112,-0.159336 0.234776,-0.318913 0.156439,-0.318912 0,-0.398381 0,-0.239124 -0.07834,-0.318913 -0.234776,-0.239124 -0.234775,-0.239124 -0.704248,-0.558037 -1.095541,-0.717293 -1.174034,-0.87671 -0.62599,-0.558036 -0.469551,-0.557957 -0.469472,-0.637585 -0.39145,-0.717374 -0.234775,-0.797081 -0.0781,-0.956497 0.0781,-0.876869 0.07834,-0.797161 0.234775,-0.796842 0.234776,-0.717373 0.391136,-0.637825 0.391449,-0.637505 0.469551,-0.558037 0.547887,-0.478248 0.547575,-0.478249 0.704561,-0.3987002 0.704327,-0.3185933 0.704248,-0.2391244 0.782663,-0.2391244 0.860766,-0.1595756 0.860921,-0.079788 0.860766,0 1.721687,0.079788 1.565248,0.1595756 1.565013,0.3984609 1.486912,0.478169 -1.878126,4.8621154 -0.860765,-0.478248 -0.939259,-0.398461 -1.095462,-0.318833 -1.095776,-0.07955 -0.547809,0.07955 -0.469551,0.07979 -0.391214,0.159257 -0.313113,0.159575 -0.156438,0.239125 -0.234697,0.239124 -0.07834,0.239125 0,0.239124 0.07834,0.398461 0.07826,0.318912 0.234775,0.239045 0.312878,0.318912 0.782663,0.557797 0.860922,0.558037 1.330316,0.876869 0.626146,0.558036 0.547653,0.637586 0.469708,0.637505 0.391292,0.797161 0.234776,0.876949 0.07826,0.478169 0.0781,0.478249 -0.0781,0.956497 -0.156595,0.87663 -0.234775,0.797161 -0.312956,0.797081 -0.391371,0.637824 -0.547888,0.637586 -0.469472,0.557956 -0.62599,0.478249 -0.626225,0.398461 -0.704248,0.3987 -0.782663,0.239124 -0.704327,0.239045 -0.782585,0.239124 -0.860765,0.07955 -0.782585,0.07979 -0.860765,0 z" id="path9490" style="fill:#e3001b;fill-opacity:1;fill-rule:nonzero;stroke:none" /> <path d="m 112.70442,29.531786 -2.66079,-7.332988 -1.1738,1.673791 0,5.659197 -8.37374,0 0,-28.6949232 8.37374,0 0,14.9055782 3.99103,-7.1738906 9.93898,0 -6.02606,8.5288486 6.1825,12.434387 -10.25186,0 z" id="path9510" style="fill:#e3001b;fill-opacity:1;fill-rule:nonzero;stroke:none" /> <path d="m 87.505182,29.850699 -1.721687,0 -1.721687,-0.159337 -1.721687,-0.239124 -1.64335,-0.39862 1.017125,-5.659197 1.017361,0.398381 1.174112,0.239125 1.095463,0.239124 1.173877,0.07979 0.469473,-0.07979 0.391449,0 0.312877,-0.159337 0.313113,-0.159336 0.234775,-0.159576 0.156674,-0.159336 0.0781,-0.239045 0.07834,-0.318912 -0.07834,-0.318673 -0.0781,-0.239125 -0.156674,-0.239363 -0.234775,-0.159337 -0.547888,-0.318912 -0.547575,-0.159336 -1.486989,-0.478169 -0.782585,-0.318913 -0.782664,-0.39846 -0.782663,-0.558037 -0.625912,-0.637506 -0.547887,-0.717373 -0.391214,-0.876948 -0.156674,-0.478169 -0.156439,-0.478249 -0.07834,-0.558037 0,-0.558036 0,-0.796842 0.156752,-0.717612 0.156361,-0.717294 0.313112,-0.717373 0.312877,-0.637585 0.469786,-0.637745 0.469551,-0.557797 0.547575,-0.558037 0.704561,-0.4781688 0.704327,-0.3987 0.78235,-0.3186731 0.861,-0.3189122 0.939024,-0.2391244 0.939102,-0.1595756 1.095697,-0.1593365 1.095541,0 1.565248,0.079788 1.64335,0.1593365 1.64335,0.2391244 1.721687,0.3189122 -0.939023,5.2607355 -1.095541,-0.318912 -1.173799,-0.239124 -1.095776,-0.159257 -1.252136,-0.07979 -0.704326,0.07979 -0.313034,0.159257 -0.234776,0.07979 -0.156439,0.159337 -0.156438,0.239124 0,0.159337 -0.07834,0.239124 0.07834,0.239364 0.0781,0.239124 0.234775,0.318673 0.469473,0.239045 0.469551,0.239124 1.330551,0.3987 1.017361,0.398461 1.017438,0.3987 0.860687,0.557718 0.782663,0.558036 0.391136,0.3987 0.313113,0.318673 0.234775,0.478249 0.234776,0.39862 0.156673,0.478249 0.156439,0.558037 0.07834,0.557797 0,0.637745 0,0.956497 -0.156674,0.87663 -0.234775,0.876949 -0.313113,0.717293 -0.469551,0.717373 -0.469472,0.637825 -0.547653,0.637505 -0.626225,0.478249 -0.704248,0.478249 -0.782663,0.3987 -0.860687,0.398461 -0.861,0.239044 -0.939102,0.239125 -1.017361,0.159336 -1.017439,0.07979 -1.095462,0 z" id="path9522" style="fill:#e3001b;fill-opacity:1;fill-rule:nonzero;stroke:none" /> <path d="m 129.1387,7.2136723 -0.93902,-0.2391244 -0.78267,-0.2391243 -0.70425,-0.4782487 -0.54788,-0.4781691 -0.39145,-0.6378243 -0.23478,-0.7173731 -0.0781,-0.7172934 0,-0.7173731 0.23478,-0.6378243 0.39121,-0.6375056 0.46955,-0.5580365 0.70425,-0.47824875 0.78266,-0.31891219 1.01736,-0.23912436 1.09578,-0.0795487 1.09546,0.0795487 0.9391,0.15957566 0.78259,0.31867306 0.70432,0.47848788 0.46956,0.4782487 0.39144,0.6375055 0.23478,0.7173731 0.078,0.7971609 -0.078,0.7970812 -0.23478,0.7173731 -0.39144,0.5580365 -0.54789,0.5577178 -0.70433,0.3987 -0.78235,0.3189122 -0.93934,0.1593365 -1.01712,0.079788 -1.01744,-0.079788 z" id="path9542" style="fill:#e3001b;fill-opacity:1;fill-rule:nonzero;stroke:none" /> <path d="m 125.625,8.5625077 0,20.9687503 9.0625,0 0,-20.9687503 z" id="path12260" style="fill:#ffffff;fill-opacity:1;stroke:#ffffff;stroke-width:0.07897998;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-opacity:0;stroke-dasharray:none" /> <path d="m 125.625,8.5625077 0,20.9687503 9.0625,0 0,-7 -1.09375,0 0,2.6875 -2.34375,0 0,-2.6875 -2.65625,0 0,-2.3125 2.65625,0 0,-2.71875 2.34375,0 0,2.71875 1.09375,0 0,-11.6562503 -9.0625,0 z" id="path9564" style="fill:#e3001b;fill-opacity:1;stroke:#ffffff;stroke-width:0.07897998;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-opacity:0;stroke-dasharray:none" /> </svg>
+      <div class="brand">
+        <h1 id="brandTitle">SBA Laufkalkulation</h1>
+        <div class="sub" id="brandSub">Command Center</div>
+      </div>
+      <div class="event-select-wrap" id="evSelWrap">
+        <select id="eventSelect" class="event-select" aria-label="Event wählen"></select>
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+      <div class="livechip off" id="statusChip"><i></i><span id="statusTxt">…</span></div>
+      <button class="iconbtn" id="menuBtn" title="Menü">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="5" r="1.1" fill="currentColor"/><circle cx="12" cy="12" r="1.1" fill="currentColor"/><circle cx="12" cy="19" r="1.1" fill="currentColor"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="offbanner" id="offBanner" hidden></div>
+    <div id="evpick" class="evpick" hidden></div>
+    <div class="seg" id="genderSeg">
+      <button data-g="frauen" class="on">Frauen</button>
+      <button data-g="maenner">Männer</button>
+      <button data-g="summary">Übersicht</button>
+    </div>
+    <div id="content"></div>
+    <div class="updated" id="stamp"></div>
+  </div>
+</div>
+
+<div class="overlay" id="menuOverlay"><div class="sheet" id="menuSheet"></div></div>
+<div class="overlay" id="eventOverlay"><div class="sheet" id="eventSheet"></div></div>
+<div class="toast" id="toast"></div>
+
+<script type="application/json" id="appstate">{"v":1,"events":[{"id":"cortina-2025-12-13","ort":"Cortina","disziplin":"GS","datum":"2025-12-13","runs":[{"id":"q1","label":"Q1","frauen":{"blau":[{"name":"ZAMFIROVA","zeit":36.75},{"name":"PAYER","zeit":37.05},{"name":"CORATTI","zeit":37.24},{"name":"ZOGG","zeit":37.37},{"name":"DALMASSO","zeit":37.45}],"rot":[{"name":"MIKI","zeit":36.78},{"name":"MADEROVA","zeit":36.96},{"name":"MOISAN","zeit":36.99},{"name":"CAFFONT","zeit":37.49},{"name":"RIEGLER","zeit":37.58}]},"maenner":{"blau":[{"name":"MARCH","zeit":34.1},{"name":"BORMOLINI","zeit":34.45},{"name":"FISCHNALLER","zeit":34.49},{"name":"BAGOZZA","zeit":34.7},{"name":"KIM","zeit":34.77},{"name":"CORATTI","zeit":34.9},{"name":"MESSNER","zeit":35.16},{"name":"BAUMEISTER","zeit":35.35}],"rot":[{"name":"LEE","zeit":34.35},{"name":"PROMEGGER","zeit":34.58},{"name":"OBMANN","zeit":34.82},{"name":"KARL","zeit":35.12},{"name":"FELICETTI","zeit":35.17},{"name":"HELDMAN","zeit":35.33},{"name":"YANKOV","zeit":35.44},{"name":"HUBER","zeit":35.44}]}},{"id":"q2","label":"Q2","frauen":{"blau":[{"name":"CAFFONT","zeit":38.28},{"name":"MIKI","zeit":38.43},{"name":"RIEGLER","zeit":38.51},{"name":"KROL-WALAS","zeit":38.93},{"name":"MOISAN","zeit":39.05}],"rot":[{"name":"DALMASSO","zeit":38.66},{"name":"PAYER","zeit":38.94},{"name":"LOCH","zeit":39.0},{"name":"ZOGG","zeit":39.06},{"name":"BUCK","zeit":39.14}]},"maenner":{"blau":[{"name":"KARL","zeit":35.36},{"name":"LEE","zeit":35.6},{"name":"SHIBA","zeit":35.64},{"name":"BURGSTALLER","zeit":35.78},{"name":"PAYER","zeit":35.87},{"name":"SHINOHARA","zeit":36.0},{"name":"OBMANN","zeit":36.12},{"name":"GEORGIEV","zeit":36.26}],"rot":[{"name":"BAGOZZA","zeit":35.28},{"name":"AUNER","zeit":35.54},{"name":"MARCH","zeit":35.58},{"name":"BORMOLINI","zeit":35.58},{"name":"KIM","zeit":35.72},{"name":"KWIATKOWSKI","zeit":35.74},{"name":"BAUMEISTER","zeit":35.83},{"name":"FISCHNALLER","zeit":35.87}]}}]},{"id":"scuol-2026-01-10","ort":"Scuol","disziplin":"GS","datum":"2026-01-10","runs":[{"id":"q1","label":"Q1","frauen":{"blau":[{"name":"MIKI","zeit":43.84},{"name":"DALMASSO","zeit":44.54},{"name":"CAFFONT","zeit":45.28},{"name":"DEKKER","zeit":45.31},{"name":"PAYER","zeit":45.5}],"rot":[{"name":"HOFMEISTER","zeit":44.79},{"name":"KOTNIK","zeit":45.24},{"name":"LOCH","zeit":45.36},{"name":"HOCHREITER","zeit":45.97},{"name":"CORATTI","zeit":46.02}]},"maenner":{"blau":[{"name":"YANKOV","zeit":42.04},{"name":"FISCHNALLER","zeit":42.19},{"name":"MESSNER","zeit":42.56},{"name":"HUBER","zeit":42.68},{"name":"CAVIEZEL","zeit":42.8},{"name":"BURGSTALLER","zeit":43.0},{"name":"MARCH","zeit":43.09},{"name":"KOSIR","zeit":43.21}],"rot":[{"name":"FELICETTI","zeit":42.24},{"name":"PROMEGGER","zeit":42.53},{"name":"BAGOZZA","zeit":42.61},{"name":"MASTNAK","zeit":42.7},{"name":"HELDMAN","zeit":42.76},{"name":"AUNER","zeit":42.8},{"name":"LEE","zeit":42.84},{"name":"OBMANN","zeit":43.01}]}},{"id":"q2","label":"Q2","frauen":{"blau":[{"name":"ZOGG","zeit":46.87},{"name":"ZAMFIROVA","zeit":46.95},{"name":"HOFMEISTER","zeit":47.09},{"name":"DANCHA","zeit":47.45},{"name":"HOCHREITER","zeit":47.71}],"rot":[{"name":"DEKKER","zeit":46.01},{"name":"MIKI","zeit":46.53},{"name":"CAFFONT","zeit":46.95},{"name":"KROL","zeit":47.13},{"name":"MOISAN","zeit":47.17}]},"maenner":{"blau":[{"name":"KIM","zeit":43.48},{"name":"RABANSER","zeit":43.49},{"name":"MATSNAK","zeit":43.58},{"name":"FELICETTI","zeit":43.67},{"name":"CASANOVA","zeit":43.91},{"name":"HELDMAN","zeit":43.97},{"name":"OBMANN","zeit":44.07},{"name":"BAGOZZA","zeit":44.25}],"rot":[{"name":"ZAMIROV","zeit":43.32},{"name":"YANKOV","zeit":43.33},{"name":"KARL","zeit":43.52},{"name":"PAYER","zeit":43.61},{"name":"KOSIR","zeit":43.69},{"name":"CAVIEZEL","zeit":43.81},{"name":"HUBER","zeit":43.98},{"name":"MARCH","zeit":44.03}]}}]},{"id":"bad-gastein-2026-01-13","ort":"Bad Gastein","disziplin":"SL","datum":"2026-01-13","runs":[{"id":"q1","label":"Q1","frauen":{"blau":[{"name":"ZOGG","zeit":30.43},{"name":"KOTNIK","zeit":30.46},{"name":"MIKI","zeit":30.7},{"name":"DANCHA","zeit":31.15},{"name":"BAETSCHI","zeit":31.45}],"rot":[{"name":"DEKKER","zeit":30.22},{"name":"KROL-WALAS","zeit":30.67},{"name":"DALMASSO","zeit":30.9},{"name":"MADEROVA","zeit":31.41},{"name":"PAYER","zeit":31.42}]},"maenner":{"blau":[{"name":"YANKOV","zeit":27.97},{"name":"BAUMEISTER","zeit":28.65},{"name":"BORMOLINI","zeit":28.68},{"name":"PROMEGGER","zeit":28.68},{"name":"WINTERS","zeit":28.69},{"name":"KARL","zeit":28.75},{"name":"CORATTI","zeit":29.14},{"name":"CAVIEZEL","zeit":29.22}],"rot":[{"name":"AUNER","zeit":28.5},{"name":"HELDMAN","zeit":28.58},{"name":"PAYER","zeit":28.69},{"name":"CASANOVA","zeit":28.72},{"name":"MESSNER","zeit":29.1},{"name":"ZAMFIROV","zeit":29.17},{"name":"MARCH","zeit":29.23},{"name":"KIM","zeit":29.24}]}},{"id":"q2","label":"Q2","frauen":{"blau":[{"name":"ZAMFIROVA","zeit":32.9},{"name":"DALMASSO","zeit":33.15},{"name":"KROL-WALAS","zeit":33.47},{"name":"DEKKER","zeit":33.48},{"name":"PFLUM","zeit":33.62}],"rot":[{"name":"HOFMEISTER","zeit":32.5},{"name":"CAFFONT","zeit":32.73},{"name":"ZOGG","zeit":33.3},{"name":"VALLE","zeit":33.83},{"name":"MIKI","zeit":33.93}]},"maenner":{"blau":[{"name":"KARNER","zeit":28.92},{"name":"BAGOZZA","zeit":29.06},{"name":"MESSNER","zeit":29.09},{"name":"OBMANN","zeit":29.17},{"name":"MARCH","zeit":29.23},{"name":"SHINOHARA","zeit":29.52},{"name":"PAYER","zeit":29.81},{"name":"KRASHNIAK","zeit":29.84}],"rot":[{"name":"GAUDET","zeit":29.13},{"name":"BAUMEISTER","zeit":29.35},{"name":"BORMOLINI","zeit":29.5},{"name":"PROMEGGER","zeit":29.71},{"name":"KARL","zeit":29.92},{"name":"TREFFLER","zeit":30.04},{"name":"CAVIEZEL","zeit":30.05},{"name":"BURGSTALLER","zeit":30.06}]}}]},{"id":"simonhöhe-2026-01-23","ort":"Simonhöhe","disziplin":"GS","datum":"2026-01-23","runs":[{"id":"q1","label":"Q1","frauen":{"blau":[{"name":"DALMASSO","zeit":31.94},{"name":"KROL-WALAS","zeit":32.35},{"name":"MADEROVA","zeit":32.47},{"name":"CORATTI","zeit":32.48},{"name":"HOFMEISTER","zeit":32.74}],"rot":[{"name":"MIKI","zeit":32.35},{"name":"DEKKER","zeit":32.35},{"name":"LEDECKA","zeit":32.48},{"name":"MOISAN","zeit":32.51},{"name":"ZOGG","zeit":32.76}]},"maenner":{"blau":[{"name":"LEE","zeit":30.63},{"name":"FISCHNALLER","zeit":30.64},{"name":"KIM","zeit":30.8},{"name":"KARL","zeit":31.02},{"name":"CORATTI","zeit":31.06},{"name":"MARGUC","zeit":31.08},{"name":"RABANSER","zeit":31.2},{"name":"CAVIEZEL","zeit":31.24}],"rot":[{"name":"OBMANN","zeit":30.69},{"name":"BORMOLINI","zeit":30.81},{"name":"HUBER","zeit":30.88},{"name":"BAUMEISTER","zeit":31.05},{"name":"PROMMEGGER","zeit":31.07},{"name":"MESSNER","zeit":31.25},{"name":"FELICETTI","zeit":31.26},{"name":"MASTNAK","zeit":31.37}]}},{"id":"q2","label":"Q2","frauen":{"blau":[{"name":"LEDECKA","zeit":32.48},{"name":"DEKKER","zeit":33.13},{"name":"MIKI","zeit":33.28},{"name":"MOISAN","zeit":33.73},{"name":"PFLUM","zeit":33.94},{"name":"CAFFONT","zeit":33.95},{"name":"ZOGG","zeit":34.05},{"name":"ANKELE","zeit":34.11}],"rot":[{"name":"DALMASSO","zeit":33.29},{"name":"KROL-WALAS","zeit":33.33},{"name":"MADEROVA","zeit":33.58},{"name":"CORATTI","zeit":33.68},{"name":"PAYER","zeit":34.09},{"name":"BAETSCHI","zeit":34.26},{"name":"HOFMEISTER","zeit":34.26},{"name":"BUCK","zeit":34.77}]},"maenner":{"blau":[{"name":"KARNER","zeit":31.18},{"name":"AUNER","zeit":31.23},{"name":"MASTNAK","zeit":31.29},{"name":"BORMOLINI","zeit":31.32},{"name":"OBMANN","zeit":31.42},{"name":"PROMMEGGER","zeit":31.55},{"name":"BAUMEISTER","zeit":31.58},{"name":"BAGOZZA","zeit":31.64}],"rot":[{"name":"BURGSTALLER","zeit":31.16},{"name":"KOSIR","zeit":31.23},{"name":"LEE","zeit":31.33},{"name":"RABANSER","zeit":31.36},{"name":"FISCHNALLER","zeit":31.36},{"name":"KARL","zeit":31.44},{"name":"YANKOV","zeit":31.53},{"name":"CORATTI","zeit":31.55}]}}]},{"id":"krynica-2026-02-28","ort":"Krynica","disziplin":"GS","datum":"2026-02-28","runs":[{"id":"q1","label":"Q1","frauen":{"blau":[{"name":"MADEROVA","zeit":33.7},{"name":"MIKI","zeit":33.82},{"name":"DALMASSO","zeit":34.62},{"name":"BUCK","zeit":35.07},{"name":"RIEGLER","zeit":35.33}],"rot":[{"name":"HOFMEISTER","zeit":33.91},{"name":"PAYER","zeit":34.06},{"name":"CAFFONT","zeit":34.15},{"name":"MOISAN","zeit":34.16},{"name":"KROL-WALAS","zeit":34.67}]},"maenner":{"blau":[{"name":"BORMOLINI","zeit":32.0},{"name":"OBMANN","zeit":32.5},{"name":"BAGOZZA","zeit":32.54},{"name":"FELICETTI","zeit":32.56},{"name":"KARL","zeit":32.64},{"name":"GAUDET","zeit":32.67},{"name":"YANKOV","zeit":32.83},{"name":"MASTNAK","zeit":32.84}],"rot":[{"name":"LEE","zeit":32.07},{"name":"KIM","zeit":32.32},{"name":"CORATTI","zeit":32.44},{"name":"PROMMEGG","zeit":32.44},{"name":"FISCHNALLER","zeit":32.46},{"name":"MARCH","zeit":32.61},{"name":"PAYER","zeit":32.61},{"name":"KOSIR","zeit":32.87}]}},{"id":"q2","label":"Q2","frauen":{"blau":[{"name":"MOISAN","zeit":35.64},{"name":"HOFMEISTER","zeit":35.88},{"name":"CAFFONT","zeit":36.13},{"name":"KROL-WALAS","zeit":36.35},{"name":"DEKKER","zeit":36.39}],"rot":[{"name":"MIKI","zeit":35.28},{"name":"BUCK","zeit":35.33},{"name":"MADEROVA","zeit":35.71},{"name":"DALMASSO","zeit":35.88},{"name":"CORATTI","zeit":36.41}]},"maenner":{"blau":[{"name":"LEE","zeit":33.43},{"name":"BAUMEISTER","zeit":33.47},{"name":"HELDMANN","zeit":33.54},{"name":"SHIBA","zeit":33.63},{"name":"HUBER","zeit":33.76},{"name":"FISCHNALLER","zeit":33.82},{"name":"MESSNER","zeit":33.88},{"name":"MARCH","zeit":34.04}],"rot":[{"name":"BORMOLINI","zeit":33.08},{"name":"SHINOHARA","zeit":33.14},{"name":"NOWACZYK","zeit":33.22},{"name":"CAVIEZEL","zeit":33.31},{"name":"MASTNAK","zeit":33.32},{"name":"RABANSER","zeit":33.52},{"name":"GAUDET","zeit":33.55},{"name":"ANGENEND","zeit":33.56}]}}]}],"updatedAt":null}</script>
+<script>
+"use strict";
+/* ============================================================
+   SBA Laufkalkulation — Live-App (Command Center + Coaches)
+   Rollen: cc (bearbeiten, publiziert live) / coach (nur lesen, live)
+   Persistenz: Firebase Realtime Database (Live-Sync via WebSocket).
+   Fallback/Demo: eingebetteter Startzustand im <script id="appstate">-Block.
+   ============================================================ */
+
+const HASH_CC = "8e99bbb072acdcbeba3c9fbb8b53a4b6fe214feebc7a2e67363e16a2246803e0";
+const HASH_COACH = "bdb96c78ed976eaca8de486b75f5f204e70c6a34089a1a196b1798f5b10fdeef";
+const ROLE_KEY = "sba-app-role";
+const GENDER_LABEL = { frauen: "Frauen", maenner: "Männer" };
+const KURS_LABEL = { blau: "Blau", rot: "Rot" };
+
+/* ---------- State aus dem eingebetteten JSON ---------- */
+let state = { events: [], updatedAt: null };
+try {
+  const raw = document.getElementById("appstate").textContent;
+  const parsed = JSON.parse(raw);
+  if (parsed && parsed.events) state = parsed;
+} catch (e) { /* leerer Start */ }
+
+const ui = { role: null, currentEventId: null, gender: "frauen", runId: "q1", entryMode: "zeit" };
+
+/* ============================================================
+   FIREBASE-KONFIGURATION — HIER EINSETZEN
+   Firebase Console → Projekteinstellungen → Deine Apps → Web-App
+   → "SDK-Konfiguration" kopieren und die Werte unten ersetzen.
+   Wichtig: databaseURL muss dabei sein (Realtime Database).
+   Solange hier "HIER_EINSETZEN" steht, läuft die App im Demo-Modus.
+   ============================================================ */
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyBXZYpxJZgblLr_aBGTo7czWe_IE-giSr4",
+  authDomain: "sba-laufkalkulation.firebaseapp.com",
+  databaseURL: "https://sba-laufkalkulation-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "sba-laufkalkulation",
+  storageBucket: "sba-laufkalkulation.firebasestorage.app",
+  messagingSenderId: "93109655681",
+  appId: "1:93109655681:web:7d5784f1f5127521b79580",
+};
+/* Dieses Firebase-Benutzerkonto legt ihr einmalig an (Authentication →
+   E-Mail/Passwort). Passwort des Kontos = Command-Center-Passwort. */
+const CC_EMAIL = "command-center@sba.app";
+
+/* ---------- Server-Sync (Firebase Realtime Database) ---------- */
+const DEMO = /HIER_EINSETZEN/.test(JSON.stringify(FIREBASE_CONFIG));
+let FB = null;                  // Firebase-Handles, sobald verbunden
+let fbFailed = false;
+let dirty = false, pushing = false, connected = false, pushTimer = null;
+let dbEmpty = false;
+
+function normalizeState(data) {
+  /* RTDB lässt leere Arrays/Objekte weg — Struktur wiederherstellen */
+  const evs = Array.isArray(data.events) ? data.events.filter(Boolean) : Object.values(data.events || {});
+  for (const ev of evs) {
+    ev.runs = (Array.isArray(ev.runs) ? ev.runs : Object.values(ev.runs || {})).filter(Boolean);
+    for (const r of ev.runs) {
+      for (const g of ["frauen", "maenner"]) {
+        r[g] = r[g] || {};
+        for (const k of ["blau", "rot"]) {
+          const l = r[g][k];
+          r[g][k] = (Array.isArray(l) ? l : Object.values(l || {})).filter(Boolean);
+          for (const e of r[g][k]) { if (e.zeit === undefined) e.zeit = null; if (e.name === undefined) e.name = ""; }
+        }
+      }
+    }
+  }
+  return { v: 1, events: evs, updatedAt: data.updatedAt || null };
+}
+
+async function initFirebase() {
+  if (DEMO) { updateStatus(); return; }
+  try {
+    const appM  = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
+    const dbM   = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js");
+    const authM = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
+    const app = appM.initializeApp(FIREBASE_CONFIG);
+    const db = dbM.getDatabase(app);
+    const auth = authM.getAuth(app);
+    FB = {
+      stateRef: dbM.ref(db, "state"),
+      set: v => dbM.set(FB.stateRef, v),
+      signIn: pw => authM.signInWithEmailAndPassword(auth, CC_EMAIL, pw),
+      signOut: () => authM.signOut(auth),
+    };
+    dbM.onValue(dbM.ref(db, ".info/connected"), s => { connected = !!s.val(); updateStatus(); });
+    authM.onAuthStateChanged(auth, user => { if (user && !ui.role) setRole("cc"); });
+    dbM.onValue(FB.stateRef, snap => {
+      const data = snap.val();
+      if (data == null) {
+        /* Knoten existiert noch nicht — Erststart: sobald das Command Center
+           angemeldet ist, werden die eingebetteten Startdaten geschrieben.
+           (Nur bei wirklich fehlendem Knoten, sonst droht eine Schreib-Schleife.) */
+        dbEmpty = true;
+        if (ui.role === "cc" && state.events.length) schedulePush();
+        updateStatus();
+        return;
+      }
+      dbEmpty = false;
+      if (dirty || pushing) { updateStatus(); return; }   // eigene Änderung ist unterwegs
+      state = normalizeState(data);
+      if (!currentEvent()) {
+        const sorted = state.events.slice().sort((a, b) => (a.datum || "").localeCompare(b.datum || ""));
+        ui.currentEventId = sorted.length ? sorted[sorted.length - 1].id : null;
+        ui.runId = "q1";
+      }
+      const ae = document.activeElement;
+      const typing = ui.role === "cc" && ae && ae.tagName === "INPUT" && ae.id !== "eventSelect";
+      if (ui.role && !typing) render();
+      else { const st = document.getElementById("stamp"); if (st) st.textContent = state.updatedAt ? "Stand: " + fmtStand(state.updatedAt) : ""; }
+      updateStatus();
+    }, err => { fbFailed = true; updateStatus(); });
+  } catch (e) { FB = null; fbFailed = true; updateStatus(); }
+}
+const fbInit = initFirebase();   // Login wartet darauf, falls Firebase noch lädt
+
+function schedulePush() {
+  dirty = true; updateStatus();
+  clearTimeout(pushTimer);
+  pushTimer = setTimeout(tryPush, 800);
+}
+async function tryPush() {
+  if (!dirty || pushing) return;
+  if (DEMO || !FB) { dirty = false; updateStatus(); return; }   // Demo: nur lokal in dieser Ansicht
+  pushing = true; updateStatus();
+  try {
+    const payload = { v: 1, events: JSON.parse(JSON.stringify(state.events)), updatedAt: new Date().toISOString() };
+    await FB.set(payload);
+    state.updatedAt = payload.updatedAt;
+    dirty = false;
+    const st = document.getElementById("stamp");
+    if (st) st.textContent = "Stand: " + fmtStand(state.updatedAt);
+  } catch (e) {
+    toast("Speichern abgelehnt — bitte als Command Center anmelden.");
+    dirty = false;
+  }
+  pushing = false; updateStatus();
+}
+function persist() { if (ui.role === "cc") schedulePush(); }
+
+/* ---------- Status-Chip ---------- */
+function updateStatus() {
+  const chip = document.getElementById("statusChip");
+  const txt = document.getElementById("statusTxt");
+  const off = document.getElementById("offBanner");
+  if (!chip) return;
+  chip.classList.remove("live", "saving", "off");
+  let banner = null;
+  if (pushing) { chip.classList.add("saving"); txt.textContent = "Speichert"; }
+  else if (dirty && !DEMO) { chip.classList.add("saving"); txt.textContent = "Ausstehend"; }
+  else if (DEMO) {
+    chip.classList.add("off"); txt.textContent = "Demo";
+    banner = "Demo-Modus — die Firebase-Konfiguration ist noch nicht eingetragen. Änderungen bleiben nur in dieser Ansicht.";
+  }
+  else if (fbFailed && !FB) {
+    chip.classList.add("off"); txt.textContent = "Offline";
+    banner = "Firebase konnte nicht geladen werden — Konfiguration prüfen.";
+  }
+  else if (!connected) { chip.classList.add("off"); txt.textContent = "Offline"; banner = "Keine Verbindung — angezeigt wird der letzte bekannte Stand."; }
+  else { chip.classList.add("live"); txt.textContent = "Live"; }
+  if (off) { off.hidden = !banner; if (banner) off.textContent = banner; }
+}
+
+/* ---------- Utils ---------- */
+const $ = s => document.querySelector(s);
+function el(tag, attrs, ...children) {
+  const n = document.createElement(tag);
+  if (attrs) for (const [k, v] of Object.entries(attrs)) {
+    if (k === "class") n.className = v;
+    else if (k.startsWith("on")) n.addEventListener(k.slice(2), v);
+    else if (k === "html") n.innerHTML = v;
+    else n.setAttribute(k, v);
+  }
+  for (const c of children) { if (c == null) continue; n.appendChild(typeof c === "string" ? document.createTextNode(c) : c); }
+  return n;
+}
+function esc(s) { return String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+let toastTimer = null;
+function toast(msg) {
+  const t = $("#toast"); t.textContent = msg; t.classList.add("show");
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("show"), 2600);
+}
+function uid(p) { return p + "-" + Math.random().toString(36).slice(2, 8); }
+function parseZeit(str) {
+  if (str == null) return null;
+  str = String(str).trim().replace(",", ".");
+  if (!str) return null;
+  const m = str.match(/^(\d+):(\d{1,2}(?:\.\d+)?)$/);
+  if (m) return parseInt(m[1], 10) * 60 + parseFloat(m[2]);
+  const v = parseFloat(str);
+  return isNaN(v) ? null : v;
+}
+function fmtZeit(z) {
+  if (z == null || isNaN(z)) return "–";
+  if (z >= 60) { const min = Math.floor(z / 60); return min + ":" + (z - min * 60).toFixed(2).padStart(5, "0"); }
+  return z.toFixed(2);
+}
+function fmtDelta(d) { if (d == null || isNaN(d)) return "–"; return (d > 0 ? "+" : "") + d.toFixed(2); }
+function fmtDatum(iso) { if (!iso) return ""; const [y, m, d] = iso.split("-"); return `${d}.${m}.${y}`; }
+function fmtStand(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d)) return "";
+  const p = n => String(n).padStart(2, "0");
+  return `${p(d.getDate())}.${p(d.getMonth() + 1)}.${d.getFullYear()}, ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+const ICONS = {
+  plus: '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  x: '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>',
+  edit: '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.8 2.8 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>',
+  copy: '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>',
+  trash: '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/></svg>',
+  logout: '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>',
+  send: '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>',
+};
+
+/* ---------- Berechnung (identisch zur Excel-Logik) ---------- */
+function computeCourse(entries) {
+  const withIdx = entries.map((e, i) => ({ name: e.name, zeit: e.zeit, idx: i }));
+  const timed = withIdx.filter(e => e.zeit != null && !isNaN(e.zeit)).sort((a, b) => a.zeit - b.zeit);
+  const untimed = withIdx.filter(e => e.zeit == null || isNaN(e.zeit));
+  const best = timed.length ? timed[0].zeit : null;
+  let sum = 0;
+  const rows = timed.map((e, i) => { sum += e.zeit; return { ...e, rank: i + 1, diff: e.zeit - best, mean: sum / (i + 1) }; });
+  return { rows, untimed, best, count: rows.length };
+}
+function computeRun(run, gender) {
+  const blau = computeCourse(run[gender].blau);
+  const rot = computeCourse(run[gender].rot);
+  const n = Math.min(blau.count, rot.count);
+  const deltas = [];
+  for (let i = 0; i < n; i++) deltas.push({ rank: i + 1, delta: blau.rows[i].mean - rot.rows[i].mean });
+  return {
+    blau, rot, n, deltas,
+    finalDelta: n ? deltas[n - 1].delta : null,
+    bestDelta: (blau.best != null && rot.best != null) ? blau.best - rot.best : null,
+  };
+}
+
+/* ---------- Modell ---------- */
+function emptyRun(id, label) { return { id, label, frauen: { blau: [], rot: [] }, maenner: { blau: [], rot: [] } }; }
+function newEvent(ort, disziplin, datum) {
+  return { id: uid("ev"), ort, disziplin, datum, runs: [emptyRun("q1", "Q1"), emptyRun("q2", "Q2")] };
+}
+function currentEvent() { return state.events.find(e => e.id === ui.currentEventId) || null; }
+function currentRun() {
+  const ev = currentEvent(); if (!ev) return null;
+  return ev.runs.find(r => r.id === ui.runId) || ev.runs[0] || null;
+}
+function eventTitle(ev) { return `${ev.ort} ${ev.disziplin} · ${fmtDatum(ev.datum)}`; }
+
+/* ---------- Login ---------- */
+async function sha256hex(s) {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
+  return [...new Uint8Array(buf)].map(x => x.toString(16).padStart(2, "0")).join("");
+}
+function setRole(role) {
+  ui.role = role;
+  try {
+    if (role === "coach" || (role === "cc" && (DEMO || !FB))) localStorage.setItem(ROLE_KEY, role);
+    else localStorage.removeItem(ROLE_KEY);
+  } catch (e) {}
+  $("#login").hidden = !!role;
+  $("#app").hidden = !role;
+  if (role) enterApp();
+}
+async function handleLogin(ev) {
+  ev.preventDefault();
+  const pw = $("#pwInput").value;
+  let hash = "";
+  try { hash = await sha256hex(pw); } catch (e) { $("#loginErr").textContent = "Dieser Browser unterstützt den Login nicht."; return; }
+  if (hash === HASH_COACH) { setRole("coach"); return; }
+  if (!DEMO) { try { await fbInit; } catch (e) {} }   // warten, falls Firebase noch lädt
+  if (FB) {
+    $("#loginErr").textContent = "";
+    try { await FB.signIn(pw); setRole("cc"); return; }
+    catch (e) { /* falsches Passwort → Fehlermeldung unten */ }
+  } else if (hash === HASH_CC) { setRole("cc"); return; }   // Demo-Modus ohne Firebase
+  {
+    $("#loginErr").textContent = "Passwort stimmt nicht — bitte nochmals versuchen.";
+    const card = $("#loginCard");
+    card.classList.remove("shake"); void card.offsetWidth; card.classList.add("shake");
+    $("#pwInput").select();
+  }
+}
+function logout() {
+  if (FB) { try { FB.signOut(); } catch (e) {} }
+  setRole(null);
+  $("#pwInput").value = ""; $("#loginErr").textContent = "";
+  setTimeout(() => $("#pwInput").focus(), 100);
+}
+
+/* ---------- App-Einstieg ---------- */
+function enterApp() {
+  const sorted = state.events.slice().sort((a, b) => (a.datum || "").localeCompare(b.datum || ""));
+  if (!currentEvent()) ui.currentEventId = sorted.length ? sorted[sorted.length - 1].id : null;
+  ui.runId = "q1";
+  $("#brandSub").textContent = ui.role === "cc" ? "Command Center" : "Coaches · Live";
+  $("#evSelWrap").hidden = ui.role !== "cc";
+  render();
+  updateStatus();
+  if (ui.role === "cc" && dbEmpty && FB) schedulePush();   // Datenbank mit Startdaten befüllen
+}
+
+/* ---------- Render-Weiche ---------- */
+function render() {
+  renderEventSelect();
+  for (const b of $("#genderSeg").querySelectorAll("button"))
+    b.classList.toggle("on", b.dataset.g === ui.gender);
+  const c = $("#content");
+  c.innerHTML = "";
+  const stamp = $("#stamp");
+  stamp.textContent = state.updatedAt ? "Stand: " + fmtStand(state.updatedAt) : "";
+  const ev = currentEvent();
+  if (ui.role === "coach") { renderCoachPicker(); renderCoach(c, ev); return; }
+  $("#evpick").hidden = true;
+  if (!ev) {
+    c.appendChild(el("div", { class: "card" }, el("div", { class: "empty-hint" }, "Kein Event vorhanden. Lege über das Menü (⋮) ein neues Event an.")));
+    return;
+  }
+  if (ui.gender === "summary") { c.appendChild(renderSummary(ev)); return; }
+  const run = currentRun();
+  c.appendChild(renderRunRow(ev, run));
+  if (!run) return;
+  c.appendChild(renderCourses(run));
+  c.appendChild(renderAnalyse(run));
+}
+function renderEventSelect() {
+  const sel = $("#eventSelect");
+  sel.innerHTML = "";
+  const sorted = state.events.slice().sort((a, b) => (a.datum || "").localeCompare(b.datum || ""));
+  for (const ev of sorted) sel.appendChild(el("option", { value: ev.id }, eventTitle(ev)));
+  if (currentEvent()) sel.value = ui.currentEventId;
+}
+
+/* ---------- Editor (Command Center) ---------- */
+function renderRunRow(ev, run) {
+  const row = el("div", { class: "runrow" });
+  for (const r of ev.runs) {
+    row.appendChild(el("button", {
+      class: "pill" + (run && r.id === run.id ? " on" : ""),
+      onclick: () => { ui.runId = r.id; render(); },
+      oncontextmenu: (e) => { e.preventDefault(); openRunSheet(r); },
+    }, r.label));
+  }
+  row.appendChild(el("button", { class: "pill ghost", onclick: () => openRunSheet(null) }, "+ Lauf"));
+  row.appendChild(el("div", { class: "spacer" }));
+  const mt = el("div", { class: "mode-toggle" }, "Eingabe:");
+  for (const m of ["zeit", "diff"]) {
+    mt.appendChild(el("button", {
+      class: "pill" + (ui.entryMode === m ? " on" : ""),
+      onclick: () => { ui.entryMode = m; render(); },
+    }, m === "zeit" ? "Zeit" : "Diff"));
+  }
+  row.appendChild(mt);
+  return row;
+}
+function renderCourses(run) {
+  const wrap = el("div", { class: "courses" });
+  for (const kurs of ["blau", "rot"]) wrap.appendChild(renderCoursePanel(run, kurs));
+  return wrap;
+}
+function renderCoursePanel(run, kurs) {
+  const comp = computeCourse(run[ui.gender][kurs]);
+  const card = el("div", { class: "card " + kurs });
+  card.appendChild(el("div", { class: "course-head" },
+    el("div", { class: "course-dot" }),
+    el("h3", null, "Lauf " + KURS_LABEL[kurs]),
+    comp.best != null
+      ? el("div", { class: "course-best", html: `Bestzeit <b>${fmtZeit(comp.best)}</b>` })
+      : el("div", { class: "course-best" }, "noch keine Zeiten")));
+  const allRows = [...comp.rows, ...comp.untimed.map(e => ({ ...e, rank: null, diff: null, mean: null }))];
+  if (allRows.length) {
+    const tab = el("table", { class: "ath" });
+    tab.appendChild(el("thead", null, el("tr", null,
+      el("th", null, "#"), el("th", null, "Name"),
+      el("th", { style: "text-align:right" }, "Zeit"),
+      el("th", { style: "text-align:right" }, "Diff"),
+      el("th", { style: "text-align:right", class: "mean-h" }, "Mean"),
+      el("th", null, ""))));
+    const tb = el("tbody");
+    allRows.forEach(r => tb.appendChild(renderAthRow(run, kurs, r, r.idx)));
+    tab.appendChild(tb);
+    card.appendChild(tab);
+  } else card.appendChild(el("div", { class: "empty-hint" }, "Noch keine Athlet:innen — unten hinzufügen."));
+  card.appendChild(el("div", { class: "addrow" },
+    el("button", { class: "addbtn", onclick: () => addAthlete(run, kurs), html: ICONS.plus + "<span>Athlet:in hinzufügen</span>" })));
+  return card;
+}
+function renderAthRow(run, kurs, r, idx) {
+  const list = run[ui.gender][kurs];
+  const diffMode = ui.entryMode === "diff";
+  const courseHasBase = list.some((e, i) => i !== idx && e.zeit != null);
+  const tr = el("tr", { class: r.rank === 1 ? "is-best" : "" });
+  tr.appendChild(el("td", { class: "rank" }, r.rank != null ? String(r.rank) : "·"));
+  const nameIn = el("input", { class: "name", value: r.name || "", placeholder: "Name", autocapitalize: "characters", "data-focus": `n-${kurs}-${idx}` });
+  nameIn.addEventListener("change", () => { list[idx].name = nameIn.value.trim().toUpperCase(); persist(); render(); });
+  tr.appendChild(el("td", null, nameIn));
+
+  /* Diff-Modus: Diff ist das Eingabefeld (wie in der Excel), Zeit wird berechnet
+     angezeigt. Führende:r und Zeilen ohne Vergleichsbasis behalten die Zeit-Eingabe. */
+  const diffEntry = diffMode && (r.rank == null ? courseHasBase : r.rank > 1);
+  if (diffEntry) {
+    tr.appendChild(el("td", { class: "diffcell", style: "width:86px" }, r.zeit != null ? fmtZeit(r.zeit) : ""));
+    const diffIn = el("input", { class: "num", inputmode: "decimal", value: r.diff != null && r.rank > 1 ? "+" + r.diff.toFixed(2) : "", placeholder: "+Diff", "data-focus": `d-${kurs}-${idx}` });
+    diffIn.addEventListener("change", () => commitDiff(run, kurs, idx, diffIn.value));
+    diffIn.addEventListener("focus", () => diffIn.select());
+    tr.appendChild(el("td", { style: "text-align:right" }, diffIn));
+  } else {
+    const zeitIn = el("input", { class: "num", inputmode: "decimal", value: r.zeit != null ? fmtZeit(r.zeit) : "", placeholder: "Zeit", "data-focus": `z-${kurs}-${idx}` });
+    zeitIn.addEventListener("change", () => commitZeit(run, kurs, idx, zeitIn.value));
+    zeitIn.addEventListener("focus", () => zeitIn.select());
+    tr.appendChild(el("td", { style: "text-align:right" }, zeitIn));
+    tr.appendChild(el("td", { class: "diffcell" }, r.diff != null && r.rank > 1 ? "+" + r.diff.toFixed(2) : (r.rank === 1 ? "—" : "")));
+  }
+  tr.appendChild(el("td", { class: "meancell" }, r.mean != null ? r.mean.toFixed(2) : ""));
+  const del = el("button", { class: "delbtn", html: ICONS.x, title: "Entfernen" });
+  del.addEventListener("click", () => { list.splice(idx, 1); persist(); render(); });
+  tr.appendChild(el("td", { class: "delcell" }, del));
+  return tr;
+}
+function commitZeit(run, kurs, idx, raw) {
+  const list = run[ui.gender][kurs];
+  if (raw.trim() === "") { list[idx].zeit = null; persist(); render(); return; }
+  const v = parseZeit(raw);
+  if (v == null) { toast("Zeit nicht lesbar — z. B. 36.75 oder 1:12.34"); render(); return; }
+  list[idx].zeit = Math.round(v * 100) / 100;
+  persist(); render();
+}
+function commitDiff(run, kurs, idx, raw) {
+  const list = run[ui.gender][kurs];
+  if (raw.trim() === "") { list[idx].zeit = null; persist(); render(); return; }
+  const v = parseZeit(raw.replace("+", ""));
+  if (v == null) { toast("Diff nicht lesbar — z. B. 0.75"); render(); return; }
+  const others = list.filter((e, i) => i !== idx && e.zeit != null);
+  if (!others.length) { toast("Zuerst die Zeit des:der Führenden eintragen."); render(); return; }
+  const best = Math.min(...others.map(e => e.zeit));
+  list[idx].zeit = Math.round((best + v) * 100) / 100;
+  persist(); render();
+}
+function addAthlete(run, kurs) {
+  const list = run[ui.gender][kurs];
+  list.push({ name: "", zeit: null });
+  render();
+  const input = document.querySelector(`input[data-focus="n-${kurs}-${list.length - 1}"]`);
+  if (input) input.focus();
+}
+
+/* ---------- Analyse & Übersicht (Command Center) ---------- */
+function verdictParts(delta, n) {
+  if (delta == null) return { cls: "neutral", html: "Für den Vergleich braucht es auf beiden Kursen mindestens je eine Zeit." };
+  const abs = Math.abs(delta).toFixed(2);
+  if (Math.abs(delta) < 0.005) return { cls: "neutral", html: `Beide Läufe sind praktisch gleich schnell <b>(Ø Top ${n})</b>.` };
+  const kurs = delta < 0 ? "blau" : "rot";
+  return { cls: kurs, html: `Lauf <b style="color:var(--${kurs})">${KURS_LABEL[kurs]}</b> ist im Schnitt <b>${abs} s</b> schneller (Ø der Top ${n} beider Kurse).` };
+}
+function renderAnalyse(run) {
+  const res = computeRun(run, ui.gender);
+  const wrap = el("div", { class: "analyse" });
+  const v = verdictParts(res.finalDelta, res.n);
+  const verdict = el("div", { class: "verdict " + v.cls });
+  verdict.appendChild(el("div", { class: "vdot", style: v.cls === "blau" ? "background:var(--blau)" : v.cls === "rot" ? "background:var(--rot)" : "" }));
+  verdict.appendChild(el("div", { class: "vtext", html: v.html + (res.bestDelta != null ? `<br><span style="color:var(--muted);font-size:12.5px">Bestzeiten: Blau ${fmtZeit(res.blau.best)} vs. Rot ${fmtZeit(res.rot.best)} (Δ ${fmtDelta(res.bestDelta)} s)</span>` : "") }));
+  if (res.finalDelta != null)
+    verdict.appendChild(el("div", { class: "vdelta", style: `color:var(--${res.finalDelta <= 0 ? "blau" : "rot"})` }, fmtDelta(res.finalDelta) + " s"));
+  wrap.appendChild(verdict);
+  if (res.deltas.length) {
+    const card = el("div", { class: "card chartcard" });
+    card.appendChild(el("h4", null, "Δ Zeit nach Rang (kumulativer Mean)"));
+    card.appendChild(el("div", { class: "sub" }, "Ø der Top-n-Zeiten je Kurs, Differenz Blau − Rot. Balken links: Blau schneller · rechts: Rot schneller."));
+    const chart = el("div", { class: "dchart" });
+    const maxAbs = Math.max(...res.deltas.map(d => Math.abs(d.delta)), 0.05);
+    for (const d of res.deltas) {
+      const frac = Math.min(Math.abs(d.delta) / maxAbs, 1) * 40;
+      const isBlau = d.delta < 0;
+      const bar = el("div", { class: "dbar", style: isBlau ? `right:50%;width:${frac}%;background:var(--blau)` : `left:50%;width:${frac}%;background:var(--rot)` });
+      const val = el("div", { class: "dval", style: (isBlau ? `right:calc(50% + ${frac}% + 6px);color:var(--blau)` : `left:calc(50% + ${frac}% + 6px);color:var(--rot)`) }, fmtDelta(d.delta));
+      chart.appendChild(el("div", { class: "drow" },
+        el("div", { class: "dl" }, "Top " + d.rank),
+        el("div", { class: "dtrack" }, el("div", { class: "dmid" }), bar, val)));
+    }
+    card.appendChild(chart);
+    card.appendChild(el("div", { class: "dlegend", html:
+      `<span><i style="background:var(--blau)"></i>Blau schneller</span>` +
+      `<span><i style="background:var(--rot)"></i>Rot schneller</span>` +
+      `<span style="color:var(--faint)">negativ = Blau vorn</span>` }));
+    wrap.appendChild(card);
+  }
+  return wrap;
+}
+function renderSummary(ev) {
+  const wrap = el("div");
+  const grid = el("div", { class: "sum-grid" });
+  const tableRows = [];
+  for (const run of ev.runs) {
+    for (const g of ["frauen", "maenner"]) {
+      const res = computeRun(run, g);
+      if (!res.blau.count && !res.rot.count) continue;
+      const title = `${run.label} · ${GENDER_LABEL[g]}`;
+      const card = el("div", { class: "card sumcard" });
+      card.appendChild(el("div", { class: "sc-head" }, el("h4", null, title), verdictChip(res)));
+      card.appendChild(el("div", { class: "sumline", html: `<span>Best <span class="cb">Blau</span></span><b>${res.blau.rows[0] ? esc(res.blau.rows[0].name) + " · " + fmtZeit(res.blau.best) : "–"}</b>` }));
+      card.appendChild(el("div", { class: "sumline", html: `<span>Best <span class="cr">Rot</span></span><b>${res.rot.rows[0] ? esc(res.rot.rows[0].name) + " · " + fmtZeit(res.rot.best) : "–"}</b>` }));
+      card.appendChild(el("div", { class: "sumline", html: `<span>Ø Top ${res.n || "–"}</span><b><span class="cb">${res.n ? res.blau.rows[res.n - 1].mean.toFixed(2) : "–"}</span> / <span class="cr">${res.n ? res.rot.rows[res.n - 1].mean.toFixed(2) : "–"}</span></b>` }));
+      card.appendChild(el("div", { class: "sumline", html: `<span>Δ Zeit (Mean)</span><b>${res.finalDelta != null ? fmtDelta(res.finalDelta) + " s" : "–"}</b>` }));
+      grid.appendChild(card);
+      tableRows.push({ title, res });
+    }
+  }
+  if (!grid.children.length) {
+    wrap.appendChild(el("div", { class: "card" }, el("div", { class: "empty-hint" }, "Noch keine Zeiten in diesem Event erfasst.")));
+    return wrap;
+  }
+  wrap.appendChild(grid);
+  const tcard = el("div", { class: "card", style: "margin-top:14px;padding:14px 16px" });
+  tcard.appendChild(el("h4", { style: "font-size:11.5px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin-bottom:10px;font-weight:700" }, "Gesamtübersicht " + eventTitle(ev)));
+  const tab = el("table", { class: "sumtab" });
+  tab.appendChild(el("thead", null, el("tr", null,
+    el("th", null, "Lauf"), el("th", null, "Best Blau"), el("th", null, "Best Rot"),
+    el("th", null, "Ø Blau"), el("th", null, "Ø Rot"), el("th", null, "Δ"))));
+  const tb = el("tbody");
+  for (const { title, res } of tableRows) {
+    const dCol = res.finalDelta == null ? "var(--muted)" : res.finalDelta <= 0 ? "var(--blau)" : "var(--rot)";
+    tb.appendChild(el("tr", null,
+      el("td", null, title),
+      el("td", null, fmtZeit(res.blau.best)), el("td", null, fmtZeit(res.rot.best)),
+      el("td", null, res.n ? res.blau.rows[res.n - 1].mean.toFixed(2) : "–"),
+      el("td", null, res.n ? res.rot.rows[res.n - 1].mean.toFixed(2) : "–"),
+      el("td", { style: "color:" + dCol + ";font-weight:700" }, res.finalDelta != null ? fmtDelta(res.finalDelta) : "–")));
+  }
+  tab.appendChild(tb);
+  const scroll = el("div", { style: "overflow-x:auto" }); scroll.appendChild(tab);
+  tcard.appendChild(scroll);
+  wrap.appendChild(tcard);
+  return wrap;
+}
+function verdictChip(res) {
+  if (res.finalDelta == null) return el("span", { class: "chip neutral" }, "unvollständig");
+  if (Math.abs(res.finalDelta) < 0.005) return el("span", { class: "chip neutral" }, "ausgeglichen");
+  if (res.finalDelta < 0) return el("span", { class: "chip blau" }, "BLAU −" + Math.abs(res.finalDelta).toFixed(2) + " s");
+  return el("span", { class: "chip rot" }, "ROT −" + res.finalDelta.toFixed(2) + " s");
+}
+
+/* ---------- Coach-Ansicht (kompakt, live) ---------- */
+function renderCoachPicker() {
+  const p = $("#evpick");
+  p.hidden = false;
+  p.innerHTML = "";
+  const sorted = state.events.slice().sort((a, b) => (a.datum || "").localeCompare(b.datum || ""));
+  for (const ev of sorted) {
+    p.appendChild(el("button", {
+      class: "pill" + (ev.id === ui.currentEventId ? " on" : ""),
+      onclick: () => { ui.currentEventId = ev.id; render(); },
+    }, ev.ort + " · " + fmtDatum(ev.datum)));
+  }
+}
+function renderCoach(c, ev) {
+  if (!ev) { c.appendChild(el("div", { class: "ccard" }, el("div", { class: "empty-hint" }, "Noch keine Events veröffentlicht."))); return; }
+  if (ui.gender === "summary") { c.appendChild(renderCoachSummary(ev)); return; }
+  const sumRows = [];
+  for (const run of ev.runs) {
+    const res = computeRun(run, ui.gender);
+    if (!res.blau.count && !res.rot.count) continue;
+    c.appendChild(renderCoachRunCard(run, res));
+    sumRows.push({ label: run.label, res });
+  }
+  if (!c.children.length) {
+    c.appendChild(el("div", { class: "ccard" }, el("div", { class: "empty-hint" }, "Für " + GENDER_LABEL[ui.gender] + " sind noch keine Zeiten erfasst.")));
+  }
+}
+function renderCoachRunCard(run, res) {
+  const card = el("div", { class: "ccard" });
+  card.appendChild(el("div", { class: "runhead" }, el("h3", null, run.label + " · " + GENDER_LABEL[ui.gender]), verdictChip(res)));
+  const duo = el("div", { class: "duo" });
+  for (const [kurs, cls] of [["blau", "b"], ["rot", "r"]]) {
+    const comp = res[kurs];
+    const col = el("div", { class: "col " + cls });
+    col.appendChild(el("div", { class: "colhead", html: "<i></i>" + KURS_LABEL[kurs] + (comp.best != null ? ' <span style="margin-left:auto;color:var(--muted);text-transform:none;letter-spacing:0">' + fmtZeit(comp.best) + "</span>" : "") }));
+    if (comp.rows.length) {
+      const t = el("table", { class: "t" });
+      for (const r of comp.rows) {
+        t.appendChild(el("tr", { class: r.rank === 1 ? "best" : "" },
+          el("td", { class: "rk" }, String(r.rank)),
+          el("td", { class: "nm" }, r.name),
+          el("td", { class: "zt" }, fmtZeit(r.zeit)),
+          el("td", { class: "df" }, r.rank > 1 ? "+" + r.diff.toFixed(2) : "—")));
+      }
+      col.appendChild(t);
+    } else col.appendChild(el("div", { class: "emptycol" }, "keine Zeiten"));
+    duo.appendChild(col);
+  }
+  card.appendChild(duo);
+  if (res.finalDelta != null) {
+    const faster = res.finalDelta < 0 ? "blau" : "rot";
+    card.appendChild(el("div", { class: "deltarow" },
+      el("div", { class: "txt", html: Math.abs(res.finalDelta) < 0.005
+        ? "Beide Läufe praktisch gleich schnell <b>(Ø Top " + res.n + ")</b>"
+        : "Lauf <b style='color:var(--" + faster + ")'>" + KURS_LABEL[faster] + "</b> im Schnitt <b>" + Math.abs(res.finalDelta).toFixed(2) + " s</b> schneller (Ø Top " + res.n + ")" }),
+      el("div", { class: "num", style: "color:var(--" + (res.finalDelta <= 0 ? "blau" : "rot") + ")" }, fmtDelta(res.finalDelta) + " s")));
+  }
+  return card;
+}
+function renderCoachSummary(ev) {
+  const card = el("div", { class: "ccard sumwrap" });
+  card.appendChild(el("div", { class: "sumhead" }, "Übersicht " + eventTitle(ev)));
+  const t = el("table", { class: "s" });
+  t.appendChild(el("tr", null,
+    el("th", null, "Lauf"), el("th", null, "Best B"), el("th", null, "Best R"), el("th", null, "Δ Mean")));
+  let any = false;
+  for (const run of ev.runs) {
+    for (const g of ["frauen", "maenner"]) {
+      const res = computeRun(run, g);
+      if (!res.blau.count && !res.rot.count) continue;
+      any = true;
+      const col = res.finalDelta == null ? "var(--muted)" : res.finalDelta <= 0 ? "var(--blau)" : "var(--rot)";
+      t.appendChild(el("tr", null,
+        el("td", null, run.label + " " + GENDER_LABEL[g]),
+        el("td", null, fmtZeit(res.blau.best)), el("td", null, fmtZeit(res.rot.best)),
+        el("td", { style: "color:" + col + ";font-weight:700" }, res.finalDelta != null ? fmtDelta(res.finalDelta) : "–")));
+    }
+  }
+  if (!any) return el("div", { class: "ccard" }, el("div", { class: "empty-hint" }, "Noch keine Zeiten erfasst."));
+  card.appendChild(t);
+  return card;
+}
+
+/* ---------- Sheets (Command Center) ---------- */
+function openOverlay(id) { $(id).classList.add("show"); }
+function closeOverlays() { for (const o of document.querySelectorAll(".overlay")) o.classList.remove("show"); }
+for (const o of document.querySelectorAll(".overlay"))
+  o.addEventListener("click", e => { if (e.target === o) closeOverlays(); });
+
+function openMenu() {
+  const s = $("#menuSheet");
+  s.innerHTML = "";
+  const mk = (icon, label, fn, cls) => el("button", { class: "menu-item " + (cls || ""), onclick: () => { closeOverlays(); fn(); }, html: icon + "<span>" + label + "</span>" });
+  const list = el("div", { class: "menu-list" });
+  if (ui.role === "cc") {
+    s.appendChild(el("h3", { html: ICONS.edit + "Command Center" }));
+    list.appendChild(mk(ICONS.plus, "Neues Event", () => openEventForm(null)));
+    if (currentEvent()) {
+      list.appendChild(mk(ICONS.edit, "Event bearbeiten", () => openEventForm(currentEvent())));
+      list.appendChild(mk(ICONS.copy, "Event duplizieren", duplicateEvent));
+      list.appendChild(mk(ICONS.trash, "Event löschen …", confirmDeleteEvent, "danger"));
+    }
+    list.appendChild(el("div", { class: "menu-sep" }));
+    list.appendChild(mk(ICONS.send, "Jetzt speichern", () => { dirty = true; tryPush(); }));
+  } else {
+    s.appendChild(el("h3", { html: ICONS.edit + "Coaches" }));
+  }
+  list.appendChild(el("div", { class: "menu-sep" }));
+  list.appendChild(mk(ICONS.logout, "Abmelden", logout));
+  s.appendChild(list);
+  openOverlay("#menuOverlay");
+}
+function openEventForm(ev) {
+  const s = $("#eventSheet");
+  s.innerHTML = "";
+  s.appendChild(el("h3", { html: ICONS.edit + (ev ? "Event bearbeiten" : "Neues Event") }));
+  const fOrt = el("input", { value: ev ? ev.ort : "", placeholder: "z. B. Scuol" });
+  const fDat = el("input", { type: "date", value: ev ? ev.datum : "" });
+  const fDis = el("select");
+  for (const d of ["GS", "SL", "PGS", "PSL"]) fDis.appendChild(el("option", { value: d }, d));
+  if (ev) fDis.value = ev.disziplin;
+  s.appendChild(el("div", { class: "field" }, el("label", null, "Ort"), fOrt));
+  s.appendChild(el("div", { class: "field" }, el("label", null, "Datum"), fDat));
+  s.appendChild(el("div", { class: "field" }, el("label", null, "Disziplin"), fDis));
+  s.appendChild(el("div", { class: "btnrow" },
+    el("button", { class: "btn", onclick: closeOverlays }, "Abbrechen"),
+    el("button", {
+      class: "btn primary", onclick: () => {
+        const ort = fOrt.value.trim();
+        if (!ort) { toast("Bitte einen Ort angeben."); return; }
+        if (ev) { ev.ort = ort; ev.datum = fDat.value; ev.disziplin = fDis.value; }
+        else {
+          const ne = newEvent(ort, fDis.value, fDat.value || new Date().toISOString().slice(0, 10));
+          state.events.push(ne); ui.currentEventId = ne.id; ui.runId = "q1";
+        }
+        persist(); closeOverlays(); render();
+      },
+    }, ev ? "Speichern" : "Anlegen")));
+  openOverlay("#eventOverlay");
+  setTimeout(() => fOrt.focus(), 50);
+}
+function duplicateEvent() {
+  const ev = currentEvent(); if (!ev) return;
+  const copy = JSON.parse(JSON.stringify(ev));
+  copy.id = uid("ev"); copy.ort = ev.ort + " (Kopie)";
+  state.events.push(copy); ui.currentEventId = copy.id;
+  persist(); render(); toast("Event dupliziert.");
+}
+function confirmDeleteEvent() {
+  const ev = currentEvent(); if (!ev) return;
+  const s = $("#eventSheet");
+  s.innerHTML = "";
+  s.appendChild(el("h3", { html: ICONS.trash + "Event löschen?" }));
+  s.appendChild(el("div", { class: "note warn" }, `„${eventTitle(ev)}" wird mit allen Zeiten für alle entfernt. Das lässt sich nicht rückgängig machen.`));
+  s.appendChild(el("div", { class: "btnrow" },
+    el("button", { class: "btn", onclick: closeOverlays }, "Abbrechen"),
+    el("button", {
+      class: "btn danger", onclick: () => {
+        state.events = state.events.filter(e => e.id !== ev.id);
+        const sorted = state.events.slice().sort((a, b) => (a.datum || "").localeCompare(b.datum || ""));
+        ui.currentEventId = sorted.length ? sorted[sorted.length - 1].id : null;
+        ui.runId = "q1"; persist(); closeOverlays(); render();
+      },
+    }, "Löschen")));
+  openOverlay("#eventOverlay");
+}
+function openRunSheet(run) {
+  const ev = currentEvent(); if (!ev) return;
+  const s = $("#eventSheet");
+  s.innerHTML = "";
+  s.appendChild(el("h3", { html: ICONS.edit + (run ? `Lauf „${run.label}"` : "Neuer Lauf") }));
+  const fLabel = el("input", { value: run ? run.label : "Q" + (ev.runs.length + 1), placeholder: "z. B. Q3, Finale" });
+  s.appendChild(el("div", { class: "field" }, el("label", null, "Bezeichnung"), fLabel));
+  const btns = el("div", { class: "btnrow" });
+  btns.appendChild(el("button", { class: "btn", onclick: closeOverlays }, "Abbrechen"));
+  if (run && ev.runs.length > 1) btns.appendChild(el("button", {
+    class: "btn danger", onclick: () => {
+      ev.runs = ev.runs.filter(r => r.id !== run.id);
+      if (ui.runId === run.id) ui.runId = ev.runs[0].id;
+      persist(); closeOverlays(); render();
+    },
+  }, "Löschen"));
+  btns.appendChild(el("button", {
+    class: "btn primary", onclick: () => {
+      const label = fLabel.value.trim() || "Lauf";
+      if (run) run.label = label;
+      else { const nr = emptyRun(uid("run"), label); ev.runs.push(nr); ui.runId = nr.id; }
+      persist(); closeOverlays(); render();
+    },
+  }, run ? "Speichern" : "Hinzufügen"));
+  s.appendChild(btns);
+  openOverlay("#eventOverlay");
+}
+
+/* ---------- Wiring ---------- */
+$("#loginForm").addEventListener("submit", handleLogin);
+$("#peekBtn").addEventListener("click", () => {
+  const f = $("#pwInput");
+  f.type = f.type === "password" ? "text" : "password";
+  f.focus();
+});
+$("#eventSelect").addEventListener("change", e => { ui.currentEventId = e.target.value; ui.runId = "q1"; render(); });
+$("#genderSeg").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  ui.gender = b.dataset.g; render();
+});
+$("#menuBtn").addEventListener("click", openMenu);
+
+/* ---------- Init ---------- */
+(function init() {
+  let saved = null;
+  try { saved = localStorage.getItem(ROLE_KEY); } catch (e) {}
+  if (saved === "coach" || (saved === "cc" && DEMO)) setRole(saved);
+  else { $("#login").hidden = false; $("#app").hidden = true; setTimeout(() => { try { $("#pwInput").focus(); } catch (e) {} }, 300); }
+})();
+
+</script>
+
+</body>
+</html>
