@@ -292,6 +292,21 @@ table.s tr:last-child td{border-bottom:none}
   .event-select-wrap{max-width:none}
   .logo-svg{height:19px}
 }
+
+/* ===== Ergänzungen Michael/Claude: Paarvergleich, Stabilität ===== */
+.chip.warn{background:rgba(255,170,0,.13);color:#a26a00;border:1px solid rgba(255,170,0,.35)}
+.stabnote{font-size:12px;font-weight:600;margin:8px 2px 0;display:flex;align-items:center;gap:6px}
+.stabnote.ok{color:var(--good)}
+.stabnote.warn{color:#a26a00}
+.pairedcard{padding:16px 18px 14px;margin-top:14px}
+.pairedcard .sc-head{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.pairedcard h4{font-size:11.5px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);font-weight:700}
+.pairedcard .sub{font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.5}
+table.ptab{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+table.ptab th{font-size:10.5px;text-transform:uppercase;letter-spacing:.7px;color:var(--faint);text-align:right;padding:7px 8px;border-bottom:2px solid var(--line);font-weight:700}
+table.ptab td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:right;color:var(--ink2)}
+table.ptab td:first-child{color:var(--ink);font-weight:650}
+table.ptab tr:last-child td{border-bottom:none}
 </style>
 </head>
 <body>
@@ -382,6 +397,21 @@ const HASH_COACH = "bdb96c78ed976eaca8de486b75f5f204e70c6a34089a1a196b1798f5b10f
 const ROLE_KEY = "sba-app-role";
 const GENDER_LABEL = { frauen: "Frauen", maenner: "Männer" };
 const KURS_LABEL = { blau: "Blau", rot: "Rot" };
+
+/* Offizieller FIS-Weltcup-Kalender Snowboard Alpin 2026/27 (Parallel-Disziplinen).
+   Quelle: fis-ski.com (Sektor SB, Kategorie WC, Saison 2027). Bei Absagen/
+   Verschiebungen hier anpassen. (Ergänzung Michael/Claude) */
+const FIS_WC_2627 = [
+  { ort: "Cortina d'Ampezzo", disziplin: "PGS", datum: "2026-12-12" },
+  { ort: "Carezza",           disziplin: "PGS", datum: "2026-12-17" },
+  { ort: "Davos",             disziplin: "PSL", datum: "2026-12-19" },
+  { ort: "Scuol",             disziplin: "PGS", datum: "2027-01-09" },
+  { ort: "Bansko",            disziplin: "PGS", datum: "2027-01-16" },
+  { ort: "Rogla",             disziplin: "PGS", datum: "2027-01-23" },
+  { ort: "Bad Gastein",       disziplin: "PSL", datum: "2027-01-26" },
+  { ort: "Krynica",           disziplin: "PGS", datum: "2027-02-27" },
+  { ort: "Winterberg",        disziplin: "PSL", datum: "2027-03-20" },
+];
 
 /* ---------- State aus dem eingebetteten JSON ---------- */
 let state = { events: [], updatedAt: null };
@@ -601,10 +631,67 @@ function computeRun(run, gender) {
   const n = Math.min(blau.count, rot.count);
   const deltas = [];
   for (let i = 0; i < n; i++) deltas.push({ rank: i + 1, delta: blau.rows[i].mean - rot.rows[i].mean });
+  const finalDelta = n ? deltas[n - 1].delta : null;
+  /* Stabilität: hat Δ auf allen Rangtiefen (mind. 3) dasselbe Vorzeichen?
+     true = Tendenz stabil · false = Vorzeichen kippt je nach Rangtiefe · null = zu wenig Daten */
+  const stable = n >= 3 ? deltas.every(d => Math.sign(d.delta) === Math.sign(finalDelta)) : null;
   return {
     blau, rot, n, deltas,
-    finalDelta: n ? deltas[n - 1].delta : null,
+    finalDelta,
     bestDelta: (blau.best != null && rot.best != null) ? blau.best - rot.best : null,
+    stable,
+  };
+}
+
+/* ---------- Paarvergleich (Ergänzung Michael/Claude) ----------
+   Jede:r Athlet:in fährt beide Kurse (Q1 auf dem einen, Q2 auf dem anderen).
+   Pro Athlet:in: d = Zeit(Blau) − Zeit(Rot) -> die Fahrerstärke kürzt sich raus.
+   Crossover-Korrektur über die beiden Startgruppen:
+     Gruppe A (Blau zuerst): d = C − ΔR   ·   Gruppe B (Rot zuerst): d = C + ΔR
+     Kurs-Effekt C = (median(dA) + median(dB)) / 2   (negativ = Blau schneller)
+     Lauf-Effekt ΔR = (median(dB) − median(dA)) / 2  (positiv = 2. Lauf langsamer)
+   Median statt Mittelwert -> robust gegen einzelne Fehlerläufe. */
+function median(arr) {
+  if (!arr.length) return null;
+  const s = arr.slice().sort((a, b) => a - b);
+  const m = Math.floor(s.length / 2);
+  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+}
+function computePaired(ev, gender) {
+  if (!ev || ev.runs.length < 2) return null;
+  const r1 = ev.runs.find(r => r.id === "q1") || ev.runs[0];
+  const r2 = ev.runs.find(r => r.id === "q2") || ev.runs.find(r => r !== r1);
+  if (!r1 || !r2 || r1 === r2) return null;
+  const key = n => String(n || "").trim().toUpperCase();
+  const map = {};
+  for (const [run, tag] of [[r1, "r1"], [r2, "r2"]])
+    for (const kurs of ["blau", "rot"])
+      for (const e of run[gender][kurs])
+        if (e.zeit != null && !isNaN(e.zeit) && key(e.name))
+          (map[key(e.name)] = map[key(e.name)] || {})[tag] = { kurs, zeit: e.zeit };
+  const pairs = [];
+  for (const name in map) {
+    const a = map[name];
+    if (!a.r1 || !a.r2 || a.r1.kurs === a.r2.kurs) continue;
+    const blau = a.r1.kurs === "blau" ? a.r1.zeit : a.r2.zeit;
+    const rot = a.r1.kurs === "rot" ? a.r1.zeit : a.r2.zeit;
+    pairs.push({ name, blau, rot, d: Math.round((blau - rot) * 100) / 100, blauZuerst: a.r1.kurs === "blau" });
+  }
+  pairs.sort((a, b) => a.d - b.d);
+  const dA = pairs.filter(p => p.blauZuerst).map(p => p.d);
+  const dB = pairs.filter(p => !p.blauZuerst).map(p => p.d);
+  let delta = null, laufEffekt = null, korrigiert = false;
+  if (dA.length && dB.length) {
+    delta = (median(dA) + median(dB)) / 2;
+    laufEffekt = (median(dB) - median(dA)) / 2;
+    korrigiert = true;
+  } else if (pairs.length) {
+    delta = median(pairs.map(p => p.d));
+  }
+  return {
+    pairs, delta, laufEffekt, korrigiert,
+    blauSchneller: pairs.filter(p => p.d < 0).length,
+    labels: { r1: r1.label, r2: r2.label },
   };
 }
 
@@ -695,6 +782,8 @@ function render() {
   if (!run) return;
   c.appendChild(renderCourses(run));
   c.appendChild(renderAnalyse(run));
+  const paired = renderPairedCard(ev, ui.gender);
+  if (paired) c.appendChild(paired);
 }
 function renderEventSelect() {
   const sel = $("#eventSelect");
@@ -835,6 +924,10 @@ function renderAnalyse(run) {
   if (res.finalDelta != null)
     verdict.appendChild(el("div", { class: "vdelta", style: `color:var(--${res.finalDelta <= 0 ? "blau" : "rot"})` }, fmtDelta(res.finalDelta) + " s"));
   wrap.appendChild(verdict);
+  if (res.stable != null)
+    wrap.appendChild(el("div", { class: "stabnote " + (res.stable ? "ok" : "warn") },
+      res.stable ? "✓ Tendenz über alle Rangtiefen stabil"
+                 : "⚠ Tendenz uneinheitlich — Δ wechselt je nach Rangtiefe das Vorzeichen"));
   if (res.deltas.length) {
     const card = el("div", { class: "card chartcard" });
     card.appendChild(el("h4", null, "Δ Zeit nach Rang (kumulativer Mean)"));
@@ -859,6 +952,44 @@ function renderAnalyse(run) {
   }
   return wrap;
 }
+
+/* ---------- Paarvergleich-Karte (Ergänzung Michael/Claude) ---------- */
+function renderPairedCard(ev, gender) {
+  const p = computePaired(ev, gender);
+  if (!p || !p.pairs.length) return null;
+  const card = el("div", { class: "card pairedcard" });
+  const head = el("div", { class: "sc-head" }, el("h4", null, "Paarvergleich · " + GENDER_LABEL[gender]));
+  if (p.delta != null) {
+    if (Math.abs(p.delta) < 0.005) head.appendChild(el("span", { class: "chip neutral" }, "ausgeglichen"));
+    else if (p.delta < 0) head.appendChild(el("span", { class: "chip blau" }, "BLAU −" + Math.abs(p.delta).toFixed(2) + " s"));
+    else head.appendChild(el("span", { class: "chip rot" }, "ROT −" + p.delta.toFixed(2) + " s"));
+  }
+  card.appendChild(head);
+  let subTxt = `Gleiche Athlet:innen auf beiden Kursen (${p.pairs.length} ${p.pairs.length === 1 ? "Paar" : "Paare"}, Median) — die Fahrerstärke kürzt sich raus. `
+    + `${p.blauSchneller} von ${p.pairs.length} auf Blau schneller.`;
+  if (p.korrigiert && p.laufEffekt != null)
+    subTxt += ` Lauf-Effekt: ${p.labels.r2} ${fmtDelta(p.laufEffekt)} s gegenüber ${p.labels.r1} (herausgerechnet).`;
+  else if (!p.korrigiert)
+    subTxt += " Noch unkorrigiert — erst eine Startgruppe hat beide Läufe.";
+  card.appendChild(el("div", { class: "sub" }, subTxt));
+  const tab = el("table", { class: "ptab" });
+  tab.appendChild(el("thead", null, el("tr", null,
+    el("th", { style: "text-align:left" }, "Athlet:in"),
+    el("th", null, "Blau"), el("th", null, "Δ"), el("th", null, "Rot"))));
+  const tb = el("tbody");
+  for (const x of p.pairs) {
+    const col = Math.abs(x.d) < 0.005 ? "var(--muted)" : x.d < 0 ? "var(--blau)" : "var(--rot)";
+    tb.appendChild(el("tr", null,
+      el("td", { style: "text-align:left" }, x.name),
+      el("td", null, fmtZeit(x.blau)),
+      el("td", { style: "color:" + col + ";font-weight:700" }, fmtDelta(x.d)),
+      el("td", null, fmtZeit(x.rot))));
+  }
+  tab.appendChild(tb);
+  card.appendChild(tab);
+  return card;
+}
+
 function renderSummary(ev) {
   const wrap = el("div");
   const grid = el("div", { class: "sum-grid" });
@@ -935,13 +1066,16 @@ function renderCoach(c, ev) {
     c.appendChild(renderCoachRunCard(run, res));
     sumRows.push({ label: run.label, res });
   }
+  const paired = renderPairedCard(ev, ui.gender);
+  if (paired) { paired.classList.add("ccard-style"); c.appendChild(paired); }
   if (!c.children.length) {
     c.appendChild(el("div", { class: "ccard" }, el("div", { class: "empty-hint" }, "Für " + GENDER_LABEL[ui.gender] + " sind noch keine Zeiten erfasst.")));
   }
 }
 function renderCoachRunCard(run, res) {
   const card = el("div", { class: "ccard" });
-  card.appendChild(el("div", { class: "runhead" }, el("h3", null, run.label + " · " + GENDER_LABEL[ui.gender]), verdictChip(res)));
+  card.appendChild(el("div", { class: "runhead" }, el("h3", null, run.label + " · " + GENDER_LABEL[ui.gender]), verdictChip(res),
+    res.stable === false ? el("span", { class: "chip warn", title: "Δ wechselt je nach Rangtiefe das Vorzeichen" }, "⚠ instabil") : null));
   const duo = el("div", { class: "duo" });
   for (const [kurs, cls] of [["blau", "b"], ["rot", "r"]]) {
     const comp = res[kurs];
@@ -1033,6 +1167,21 @@ function openEventForm(ev) {
   const fDis = el("select");
   for (const d of ["GS", "SL", "PGS", "PSL"]) fDis.appendChild(el("option", { value: d }, d));
   if (ev) fDis.value = ev.disziplin;
+  if (!ev) {
+    /* Schnellauswahl aus dem FIS-Weltcup-Kalender (Ergänzung Michael/Claude) */
+    const fFis = el("select");
+    fFis.appendChild(el("option", { value: "" }, "— manuell eingeben —"));
+    for (let i = 0; i < FIS_WC_2627.length; i++) {
+      const w = FIS_WC_2627[i];
+      fFis.appendChild(el("option", { value: String(i) }, `${w.ort} · ${w.disziplin} · ${fmtDatum(w.datum)}`));
+    }
+    fFis.addEventListener("change", () => {
+      const w = FIS_WC_2627[Number(fFis.value)];
+      if (!w) return;
+      fOrt.value = w.ort; fDat.value = w.datum; fDis.value = w.disziplin;
+    });
+    s.appendChild(el("div", { class: "field" }, el("label", null, "FIS Weltcup 2026/27 übernehmen"), fFis));
+  }
   s.appendChild(el("div", { class: "field" }, el("label", null, "Ort"), fOrt));
   s.appendChild(el("div", { class: "field" }, el("label", null, "Datum"), fDat));
   s.appendChild(el("div", { class: "field" }, el("label", null, "Disziplin"), fDis));
