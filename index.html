@@ -293,6 +293,27 @@ table.s tr:last-child td{border-bottom:none}
   .logo-svg{height:19px}
 }
 
+/* ===== Ergänzung Michael/Claude: Kernaussage gross ===== */
+.bigverdict{display:flex;align-items:baseline;gap:10px;border-radius:12px;padding:15px 16px;margin:2px 0 12px;color:#fff;box-shadow:var(--shadow)}
+.bigverdict.blau{background:var(--blau)}
+.bigverdict.rot{background:var(--rot)}
+.bigverdict.neutral{background:#8a93a0}
+.bigverdict.open{background:var(--field);color:var(--muted);border:1.5px dashed var(--line);box-shadow:none}
+.bigverdict .bv-course{font-size:27px;font-weight:900;letter-spacing:.02em;line-height:1}
+.bigverdict .bv-txt{font-size:13px;font-weight:600;opacity:.92}
+.bigverdict .bv-delta{margin-left:auto;font-size:24px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1}
+.bigverdict .bv-warn{font-size:11px;font-weight:700;background:rgba(255,255,255,.2);border-radius:6px;padding:3px 7px;align-self:center}
+.vgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.vtile{border-radius:12px;padding:12px 14px;color:#fff;box-shadow:var(--shadow)}
+.vtile.blau{background:var(--blau)}
+.vtile.rot{background:var(--rot)}
+.vtile.neutral{background:#8a93a0}
+.vtile.open{background:var(--field);color:var(--muted);border:1.5px dashed var(--line);box-shadow:none}
+.vtile .vt-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;opacity:.9;margin-bottom:4px}
+.vtile .vt-course{font-size:22px;font-weight:900;line-height:1.05}
+.vtile .vt-delta{font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:3px;opacity:.95}
+@media(max-width:360px){.vgrid{grid-template-columns:1fr}}
+
 /* ===== Ergänzungen Michael/Claude: Paarvergleich, Stabilität ===== */
 .chip.warn{background:rgba(255,170,0,.13);color:#a26a00;border:1px solid rgba(255,170,0,.35)}
 .stabnote{font-size:12px;font-weight:600;margin:8px 2px 0;display:flex;align-items:center;gap:6px}
@@ -402,6 +423,8 @@ const KURS_LABEL = { blau: "Blau", rot: "Rot" };
    Quelle: fis-ski.com (Sektor SB, Kategorie WC, Saison 2027). Bei Absagen/
    Verschiebungen hier anpassen. (Ergänzung Michael/Claude) */
 const FIS_WC_2627 = [
+  { ort: "Snow Ruyi (TBC)",   disziplin: "PGS", datum: "2026-11-28" },
+  { ort: "Mylin",             disziplin: "PGS", datum: "2026-12-05" },
   { ort: "Cortina d'Ampezzo", disziplin: "PGS", datum: "2026-12-12" },
   { ort: "Carezza",           disziplin: "PGS", datum: "2026-12-17" },
   { ort: "Davos",             disziplin: "PSL", datum: "2026-12-19" },
@@ -409,6 +432,7 @@ const FIS_WC_2627 = [
   { ort: "Bansko",            disziplin: "PGS", datum: "2027-01-16" },
   { ort: "Rogla",             disziplin: "PGS", datum: "2027-01-23" },
   { ort: "Bad Gastein",       disziplin: "PSL", datum: "2027-01-26" },
+  { ort: "Ratschings",        disziplin: "PSL", datum: "2027-01-30" },
   { ort: "Krynica",           disziplin: "PGS", datum: "2027-02-27" },
   { ort: "Winterberg",        disziplin: "PSL", datum: "2027-03-20" },
 ];
@@ -917,6 +941,7 @@ function verdictParts(delta, n) {
 function renderAnalyse(run) {
   const res = computeRun(run, ui.gender);
   const wrap = el("div", { class: "analyse" });
+  wrap.appendChild(bigVerdict(res));
   const v = verdictParts(res.finalDelta, res.n);
   const verdict = el("div", { class: "verdict " + v.cls });
   verdict.appendChild(el("div", { class: "vdot", style: v.cls === "blau" ? "background:var(--blau)" : v.cls === "rot" ? "background:var(--rot)" : "" }));
@@ -1072,10 +1097,29 @@ function renderCoach(c, ev) {
     c.appendChild(el("div", { class: "ccard" }, el("div", { class: "empty-hint" }, "Für " + GENDER_LABEL[ui.gender] + " sind noch keine Zeiten erfasst.")));
   }
 }
+/* ---------- Kernaussage gross (Ergänzung Michael/Claude) ---------- */
+function bigVerdict(res) {
+  if (res.finalDelta == null)
+    return el("div", { class: "bigverdict open" },
+      el("div", { class: "bv-course", style: "font-size:15px;font-weight:700" }, "Noch offen"),
+      el("div", { class: "bv-txt", style: "opacity:1" }, "zu wenig Zeiten für einen Vergleich"));
+  if (Math.abs(res.finalDelta) < 0.005)
+    return el("div", { class: "bigverdict neutral" },
+      el("div", { class: "bv-course" }, "AUSGEGLICHEN"),
+      el("div", { class: "bv-txt" }, "Ø Top " + res.n),
+      el("div", { class: "bv-delta" }, "±0.00 s"));
+  const kurs = res.finalDelta < 0 ? "blau" : "rot";
+  return el("div", { class: "bigverdict " + kurs },
+    el("div", { class: "bv-course" }, KURS_LABEL[kurs].toUpperCase()),
+    el("div", { class: "bv-txt" }, "schneller · Ø Top " + res.n),
+    res.stable === false ? el("div", { class: "bv-warn", title: "Δ wechselt je nach Rangtiefe das Vorzeichen" }, "⚠ instabil") : null,
+    el("div", { class: "bv-delta" }, Math.abs(res.finalDelta).toFixed(2) + " s"));
+}
+
 function renderCoachRunCard(run, res) {
   const card = el("div", { class: "ccard" });
-  card.appendChild(el("div", { class: "runhead" }, el("h3", null, run.label + " · " + GENDER_LABEL[ui.gender]), verdictChip(res),
-    res.stable === false ? el("span", { class: "chip warn", title: "Δ wechselt je nach Rangtiefe das Vorzeichen" }, "⚠ instabil") : null));
+  card.appendChild(el("div", { class: "runhead" }, el("h3", null, run.label + " · " + GENDER_LABEL[ui.gender])));
+  card.appendChild(bigVerdict(res));
   const duo = el("div", { class: "duo" });
   for (const [kurs, cls] of [["blau", "b"], ["rot", "r"]]) {
     const comp = res[kurs];
@@ -1095,17 +1139,12 @@ function renderCoachRunCard(run, res) {
     duo.appendChild(col);
   }
   card.appendChild(duo);
-  if (res.finalDelta != null) {
-    const faster = res.finalDelta < 0 ? "blau" : "rot";
-    card.appendChild(el("div", { class: "deltarow" },
-      el("div", { class: "txt", html: Math.abs(res.finalDelta) < 0.005
-        ? "Beide Läufe praktisch gleich schnell <b>(Ø Top " + res.n + ")</b>"
-        : "Lauf <b style='color:var(--" + faster + ")'>" + KURS_LABEL[faster] + "</b> im Schnitt <b>" + Math.abs(res.finalDelta).toFixed(2) + " s</b> schneller (Ø Top " + res.n + ")" }),
-      el("div", { class: "num", style: "color:var(--" + (res.finalDelta <= 0 ? "blau" : "rot") + ")" }, fmtDelta(res.finalDelta) + " s")));
-  }
   return card;
 }
 function renderCoachSummary(ev) {
+  const wrap = el("div");
+  /* Kernaussage pro Lauf als grosse Kacheln (Ergänzung Michael/Claude) */
+  const grid = el("div", { class: "vgrid" });
   const card = el("div", { class: "ccard sumwrap" });
   card.appendChild(el("div", { class: "sumhead" }, "Übersicht " + eventTitle(ev)));
   const t = el("table", { class: "s" });
@@ -1117,16 +1156,24 @@ function renderCoachSummary(ev) {
       const res = computeRun(run, g);
       if (!res.blau.count && !res.rot.count) continue;
       any = true;
+      const label = run.label + " " + GENDER_LABEL[g];
+      const kurs = res.finalDelta == null ? null : Math.abs(res.finalDelta) < 0.005 ? "neutral" : res.finalDelta < 0 ? "blau" : "rot";
+      grid.appendChild(el("div", { class: "vtile " + (kurs || "open") },
+        el("div", { class: "vt-label" }, label),
+        el("div", { class: "vt-course" }, kurs == null ? "offen" : kurs === "neutral" ? "AUSGEGL." : KURS_LABEL[kurs].toUpperCase()),
+        el("div", { class: "vt-delta" }, res.finalDelta != null ? Math.abs(res.finalDelta).toFixed(2) + " s" : "–")));
       const col = res.finalDelta == null ? "var(--muted)" : res.finalDelta <= 0 ? "var(--blau)" : "var(--rot)";
       t.appendChild(el("tr", null,
-        el("td", null, run.label + " " + GENDER_LABEL[g]),
+        el("td", null, label),
         el("td", null, fmtZeit(res.blau.best)), el("td", null, fmtZeit(res.rot.best)),
         el("td", { style: "color:" + col + ";font-weight:700" }, res.finalDelta != null ? fmtDelta(res.finalDelta) : "–")));
     }
   }
   if (!any) return el("div", { class: "ccard" }, el("div", { class: "empty-hint" }, "Noch keine Zeiten erfasst."));
+  wrap.appendChild(grid);
   card.appendChild(t);
-  return card;
+  wrap.appendChild(card);
+  return wrap;
 }
 
 /* ---------- Sheets (Command Center) ---------- */

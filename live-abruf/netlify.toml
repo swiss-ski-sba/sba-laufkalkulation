@@ -1,0 +1,8 @@
+[build]
+  publish = "public"
+  functions = "functions"
+
+# Läuft jede Minute. Der Poller selbst prüft zuerst, ob heute überhaupt ein
+# Weltcup-Renntag ist, und beendet sich sonst sofort (kostet praktisch nichts).
+[functions."poller"]
+  schedule = "* * * * *"
