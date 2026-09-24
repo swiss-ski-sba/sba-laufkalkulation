@@ -1,0 +1,9 @@
+{
+  "name": "sba-live-abruf",
+  "version": "1.0.0",
+  "private": true,
+  "description": "SBA Laufkalkulation – Live- und PDF-Abruf der FIS-Daten (nur lesend) -> Firebase",
+  "dependencies": {
+    "pdf-parse": "^1.1.4"
+  }
+}

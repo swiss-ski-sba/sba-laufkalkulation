@@ -6,3 +6,8 @@
 # Weltcup-Renntag ist, und beendet sich sonst sofort (kostet praktisch nichts).
 [functions."poller"]
   schedule = "* * * * *"
+
+# PDF-Pfad (zweite, robuste Datenquelle): prüft alle 5 Minuten, ob neue
+# offizielle Quali-PDFs (Startlisten/Resultate) publiziert wurden.
+[functions."pdf-poller"]
+  schedule = "*/5 * * * *"

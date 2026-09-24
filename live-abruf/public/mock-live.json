@@ -1,0 +1,120 @@
+{
+  "info": "Mock-Livedaten für den Vorab-Test des SBA Live-Abrufs. Struktur bewusst ähnlich einem FIS-Live-Feed. Wird vom Poller gelesen, wenn LIVE_URL auf diese Datei zeigt.",
+  "event": "TEST Mock-Rennen",
+  "categories": [
+    {
+      "gender": "Women",
+      "runs": [
+        {
+          "run": "Q1",
+          "courses": [
+            {
+              "course": "Blue",
+              "athletes": [
+                { "name": "Zogg", "time": "36.75" },
+                { "name": "Candrian", "time": "37.05" },
+                { "name": "Miki", "time": "37.24" },
+                { "name": "Dalmasso", "time": "37.37" },
+                { "name": "Payer", "time": "37.45" }
+              ]
+            },
+            {
+              "course": "Red",
+              "athletes": [
+                { "name": "Coratti", "time": "36.98" },
+                { "name": "Riegler", "time": "37.16" },
+                { "name": "Caffont", "time": "37.19" },
+                { "name": "Moisan", "time": "37.69" },
+                { "name": "Maderova", "time": "37.78" }
+              ]
+            }
+          ]
+        },
+        {
+          "run": "Q2",
+          "courses": [
+            {
+              "course": "Blue",
+              "athletes": [
+                { "name": "Caffont", "time": "38.28" },
+                { "name": "Riegler", "time": "38.51" },
+                { "name": "Moisan", "time": "38.93" },
+                { "name": "Coratti", "time": "39.05" },
+                { "name": "Maderova", "time": "39.21" }
+              ]
+            },
+            {
+              "course": "Red",
+              "athletes": [
+                { "name": "Dalmasso", "time": "38.66" },
+                { "name": "Payer", "time": "38.94" },
+                { "name": "Zogg", "time": "39.06" },
+                { "name": "Candrian", "time": "39.14" },
+                { "name": "Miki", "time": "39.30" }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "gender": "Men",
+      "runs": [
+        {
+          "run": "Q1",
+          "courses": [
+            {
+              "course": "Blue",
+              "athletes": [
+                { "name": "March", "time": "34.10" },
+                { "name": "Bormolini", "time": "34.45" },
+                { "name": "Fischnaller", "time": "34.49" },
+                { "name": "Bagozza", "time": "34.70" },
+                { "name": "Kim", "time": "34.77" },
+                { "name": "Caviezel", "time": "34.90" }
+              ]
+            },
+            {
+              "course": "Red",
+              "athletes": [
+                { "name": "Lee", "time": "34.35" },
+                { "name": "Promegger", "time": "34.58" },
+                { "name": "Obmann", "time": "34.82" },
+                { "name": "Karl", "time": "35.12" },
+                { "name": "Felicetti", "time": "35.17" },
+                { "name": "Messner", "time": "35.33" }
+              ]
+            }
+          ]
+        },
+        {
+          "run": "Q2",
+          "courses": [
+            {
+              "course": "Blue",
+              "athletes": [
+                { "name": "Karl", "time": "35.36" },
+                { "name": "Lee", "time": "35.60" },
+                { "name": "Obmann", "time": "35.64" },
+                { "name": "Promegger", "time": "35.78" },
+                { "name": "Felicetti", "time": "35.87" },
+                { "name": "Messner", "time": "36.00" }
+              ]
+            },
+            {
+              "course": "Red",
+              "athletes": [
+                { "name": "Bagozza", "time": "35.28" },
+                { "name": "March", "time": "35.54" },
+                { "name": "Bormolini", "time": "35.58" },
+                { "name": "Kim", "time": "35.72" },
+                { "name": "Caviezel", "time": "35.74" },
+                { "name": "Fischnaller", "time": "35.83" }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
